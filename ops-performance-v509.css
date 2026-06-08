@@ -1,0 +1,72 @@
+/* Dashboard OPS V5.09 - performance percue et rendu progressif. */
+
+:root{
+  --ops-native-fast:.18s;
+  --ops-native-smooth:.22s;
+}
+
+.page.active{
+  animation-duration:var(--ops-native-smooth) !important;
+}
+
+.page.active > *{
+  animation-duration:var(--ops-native-smooth) !important;
+}
+
+.execCsiTrack i{
+  animation-duration:.46s !important;
+}
+
+.card,
+.panel,
+.checkItem,
+.execKpi,
+.execPanel,
+.opsComplaintsV112Card,
+.opsComplaintsV112Kpi{
+  transition-duration:var(--ops-native-smooth) !important;
+}
+
+.btn,
+.execBtn,
+.nav,
+.menu button,
+.opsComplaintsV112Toggle{
+  transition-duration:var(--ops-native-fast) !important;
+}
+
+@supports(content-visibility:auto){
+  #page-dashboard .execPanel,
+  #page-restaurant .opsRestaurantProfileBottom > *,
+  #page-inventory .inventoryPanel,
+  #page-inventory .inventoryProduct,
+  #page-admin .opsAdminCard{
+    content-visibility:auto;
+    contain-intrinsic-size:auto 260px;
+  }
+
+  #page-inventory .inventoryProduct{
+    contain-intrinsic-size:auto 180px;
+  }
+}
+
+@media(max-width:760px){
+  .card:hover,
+  .panel:hover,
+  .checkItem:hover,
+  .execKpi:hover,
+  .execPanel:hover,
+  .opsComplaintsV112Card:hover,
+  .opsComplaintsV112Kpi:hover{
+    transform:none !important;
+    box-shadow:inherit !important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .page.active,
+  .page.active > *,
+  .execCsiTrack i{
+    animation:none !important;
+  }
+}

@@ -1,0 +1,536 @@
+/* Dashboard OPS V5.2 final enterprise experience.
+   Additive presentation layer only. */
+
+:root{
+  --v52-charcoal:#070a0f;
+  --v52-panel:rgba(16,23,34,.97);
+  --v52-panel-soft:rgba(20,28,40,.94);
+  --v52-line:rgba(226,232,240,.1);
+  --v52-red:#e32630;
+  --v52-brand-red:#e2211c;
+  --v52-green:#47d879;
+  --v52-amber:#f4b740;
+  --v52-muted:#aab5c4;
+  --v52-radius:15px;
+}
+
+/* Brand block uses the exact Salvatoré logo red. */
+.logoFull{
+  border-color:var(--v52-brand-red) !important;
+  background:var(--v52-brand-red) !important;
+  box-shadow:0 14px 30px rgba(226,33,28,.24) !important;
+}
+
+.logoFull img{
+  background:var(--v52-brand-red) !important;
+}
+
+.pwaLaunchMark{
+  border-color:var(--v52-brand-red) !important;
+  background:var(--v52-brand-red) !important;
+}
+
+/* Fixed enterprise sidebar */
+@media(min-width:901px){
+  .app{
+    grid-template-columns:260px minmax(0,1fr) !important;
+  }
+
+  .hero{
+    position:sticky !important;
+    top:0;
+    width:260px !important;
+    flex:0 0 260px;
+    background:linear-gradient(180deg,rgba(7,10,15,.995),rgba(5,7,11,.995)) !important;
+    box-shadow:20px 0 56px rgba(0,0,0,.36) !important;
+  }
+
+  .menu{
+    padding-bottom:12px !important;
+  }
+
+  .menu button{
+    min-height:45px !important;
+    font-size:13px !important;
+  }
+}
+
+@media(min-width:901px) and (max-width:1180px){
+  .app{
+    grid-template-columns:224px minmax(0,1fr) !important;
+  }
+
+  .hero{
+    width:224px !important;
+    flex-basis:224px;
+  }
+
+  .menu button{
+    padding-inline:10px !important;
+    font-size:12.5px !important;
+  }
+}
+
+.opsV52SidebarContext{
+  order:1;
+  display:grid;
+  gap:3px;
+  margin:0 0 10px;
+  padding:9px 10px;
+  border:1px solid var(--v52-line);
+  border-radius:11px;
+  background:rgba(255,255,255,.035);
+}
+
+.opsV52SidebarContext span{
+  color:#8f9aaa;
+  font-size:9px;
+  font-weight:950;
+  text-transform:uppercase;
+}
+
+.opsV52SidebarContext strong{
+  overflow:hidden;
+  color:#fff;
+  font-size:12px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.menu .nav{
+  will-change:transform;
+}
+
+.menu .nav[data-page="admin"].active:not(.opsAdminRouteActive){
+  border-color:transparent !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  color:#c7d0dc !important;
+}
+
+.menu .nav[data-page="admin"].active:not(.opsAdminRouteActive):before{
+  background:transparent !important;
+  box-shadow:none !important;
+}
+
+.opsV52NavBadge{
+  min-width:22px;
+  height:20px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin-left:auto;
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:999px;
+  padding:0 6px;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  font-size:10px;
+  font-weight:950;
+  line-height:1;
+}
+
+/* Intelligence surfaces */
+.opsV52Insight{
+  position:relative;
+  overflow:hidden;
+  display:grid;
+  gap:12px;
+  margin:14px 0;
+  border:1px solid rgba(226,232,240,.105);
+  border-radius:var(--v52-radius);
+  padding:15px 16px;
+  background:linear-gradient(135deg,rgba(24,33,47,.97),rgba(12,18,27,.98) 62%,rgba(42,11,16,.84));
+  box-shadow:0 16px 38px rgba(0,0,0,.2);
+  animation:v52SurfaceIn .3s cubic-bezier(.22,.75,.2,1) both;
+}
+
+.opsV52Insight:before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:1px;
+  background:linear-gradient(90deg,rgba(227,38,48,.9),rgba(255,255,255,.18),transparent 72%);
+}
+
+.opsV52InsightHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+}
+
+.opsV52Eyebrow{
+  display:block;
+  margin:0 0 5px;
+  color:#ff737b;
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+.opsV52Insight h3,
+.opsV52RestaurantSignature h3{
+  margin:0;
+  color:#fff;
+  font-size:17px;
+  font-weight:950;
+}
+
+.opsV52Insight p,
+.opsV52RestaurantSignature p{
+  margin:5px 0 0;
+  color:var(--v52-muted);
+  font-size:12px;
+  line-height:1.5;
+}
+
+.opsV52DetailBtn{
+  min-height:38px;
+  flex:0 0 auto;
+  border:1px solid rgba(255,119,126,.35);
+  border-radius:10px;
+  padding:0 11px;
+  background:rgba(227,38,48,.1);
+  color:#fff;
+  font-size:11px;
+  font-weight:950;
+  cursor:pointer;
+  transition:transform .18s ease,border-color .18s ease,background .18s ease;
+}
+
+.opsV52DetailBtn:hover{
+  transform:translate3d(0,-1px,0);
+  border-color:rgba(255,119,126,.62);
+  background:rgba(227,38,48,.2);
+}
+
+.opsV52BadgeRow{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.opsV52Badge{
+  min-height:30px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border:1px solid var(--v52-line);
+  border-radius:999px;
+  padding:0 10px;
+  background:rgba(255,255,255,.035);
+  color:#eef3f9;
+  font-size:11px;
+  font-weight:900;
+}
+
+.opsV52Badge b{
+  color:#aab5c4;
+  font-size:9px;
+  text-transform:uppercase;
+}
+
+.opsV52Badge.good{
+  border-color:rgba(71,216,121,.22);
+  background:rgba(71,216,121,.075);
+  color:#70e796;
+}
+
+.opsV52Badge.bad{
+  border-color:rgba(255,91,101,.24);
+  background:rgba(227,38,48,.1);
+  color:#ff8b91;
+}
+
+.opsV52Badge.neutral{
+  color:#dfe7f1;
+}
+
+.opsV52SummaryGrid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+}
+
+.opsV52SummaryColumn{
+  border:1px solid var(--v52-line);
+  border-radius:11px;
+  padding:11px;
+  background:rgba(255,255,255,.028);
+}
+
+.opsV52SummaryColumn h4{
+  margin:0 0 7px;
+  color:#fff;
+  font-size:11px;
+  font-weight:950;
+  text-transform:uppercase;
+}
+
+.opsV52SummaryColumn ul{
+  display:grid;
+  gap:6px;
+  margin:0;
+  padding-left:15px;
+}
+
+.opsV52SummaryColumn li{
+  color:#c6d0dd;
+  font-size:11px;
+  line-height:1.45;
+}
+
+.opsV52SummaryColumn.good h4{color:#70e796}
+.opsV52SummaryColumn.attention h4{color:#ffd06e}
+.opsV52SummaryColumn.bad h4{color:#ff8b91}
+
+/* Restaurant signature */
+.opsV52RestaurantSignature{
+  display:grid;
+  grid-template-columns:minmax(220px,.8fr) minmax(0,2fr);
+  gap:16px;
+  margin:0 0 14px;
+  border:1px solid rgba(226,232,240,.11);
+  border-radius:17px;
+  padding:18px;
+  background:linear-gradient(135deg,rgba(23,32,45,.98),rgba(10,15,23,.98) 62%,rgba(54,10,16,.88));
+  box-shadow:0 18px 42px rgba(0,0,0,.24);
+  animation:v52SurfaceIn .3s cubic-bezier(.22,.75,.2,1) both;
+}
+
+.opsV52RestaurantTitle h3{
+  font-size:clamp(23px,2.5vw,34px);
+}
+
+.opsV52RestaurantMeta{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+}
+
+.opsV52RestaurantMeta div{
+  display:grid;
+  gap:5px;
+  align-content:center;
+  min-height:66px;
+  border:1px solid var(--v52-line);
+  border-radius:11px;
+  padding:10px;
+  background:rgba(255,255,255,.035);
+}
+
+.opsV52RestaurantMeta span{
+  color:#96a2b2;
+  font-size:9px;
+  font-weight:950;
+  text-transform:uppercase;
+}
+
+.opsV52RestaurantMeta strong{
+  color:#fff;
+  font-size:13px;
+}
+
+#page-restaurant #profile > .cards{
+  margin-top:14px !important;
+}
+
+/* Admin enterprise console */
+#page-admin .opsAdminHeroPanel{
+  background:linear-gradient(135deg,rgba(27,37,52,.98),rgba(10,15,23,.98) 64%,rgba(55,10,16,.86)) !important;
+}
+
+#page-admin .opsAdminStats div{
+  transition:transform .18s ease,border-color .18s ease,background .18s ease;
+}
+
+#page-admin .opsAdminStats div:hover{
+  transform:translate3d(0,-2px,0);
+  border-color:rgba(226,232,240,.18) !important;
+  background:rgba(255,255,255,.055) !important;
+}
+
+#page-admin .opsAdminCreate,
+#page-admin .opsAdminRestaurants,
+#page-admin .opsAdminUserPicker,
+#page-admin .opsAdminUser{
+  scroll-margin-top:20px;
+}
+
+#page-admin:not(.opsAdminUsersMode) .opsUsersOnly,
+#page-admin.opsAdminUsersMode .opsAdminOverviewOnly{
+  display:none !important;
+}
+
+#page-admin .opsUserManagement{
+  display:grid;
+  gap:18px;
+}
+
+#page-admin .opsUserManagementHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+
+#page-admin .opsUserManagementHead h3,
+#page-admin .opsUserManagementHead p{
+  margin:0;
+}
+
+#page-admin .opsUserManagementHead p{
+  margin-top:6px;
+  color:var(--v52-muted);
+}
+
+#page-admin .opsUserCreateGrid{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;
+  gap:10px;
+}
+
+#page-admin .opsUserDirectoryList{
+  display:grid;
+  gap:9px;
+}
+
+#page-admin .opsUserDirectoryRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:14px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:12px;
+  background:rgba(4,8,14,.42);
+}
+
+#page-admin .opsUserDirectoryRow div{
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+
+#page-admin .opsUserDirectoryRow strong{
+  overflow-wrap:anywhere;
+}
+
+#page-admin .opsUserDirectoryRow span{
+  color:var(--v52-muted);
+  font-size:12px;
+}
+
+/* Tables and progressive polish */
+.tableWrap tbody tr,
+.execTable > *,
+.inventoryProduct{
+  transition:background .18s ease,border-color .18s ease,transform .18s ease !important;
+}
+
+.tableWrap tbody tr:hover{
+  background:rgba(255,255,255,.035);
+}
+
+.execTable > *:hover{
+  transform:translate3d(2px,0,0);
+}
+
+.execSpark svg,
+.lineChart{
+  animation:v52GraphIn .46s cubic-bezier(.22,.75,.2,1) both;
+}
+
+@keyframes v52SurfaceIn{
+  from{opacity:.35;transform:translate3d(0,8px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+
+@keyframes v52GraphIn{
+  from{opacity:.25;transform:translate3d(0,4px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+
+@media(max-width:900px){
+  #page-admin .opsUserCreateGrid{
+    grid-template-columns:1fr;
+  }
+
+  #page-admin .opsUserManagementHead,
+  #page-admin .opsUserDirectoryRow{
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .opsV52SidebarContext{
+    display:none;
+  }
+
+  .opsV52NavBadge{
+    min-width:18px;
+    height:18px;
+    padding:0 5px;
+  }
+
+  .opsV52Insight{
+    padding:13px;
+  }
+
+  .opsV52InsightHead{
+    align-items:flex-start;
+  }
+
+  .opsV52RestaurantSignature{
+    grid-template-columns:1fr;
+    padding:15px;
+  }
+
+  .opsV52RestaurantMeta{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .opsV52SummaryGrid{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:560px){
+  .opsV52InsightHead{
+    display:grid;
+  }
+
+  .opsV52DetailBtn{
+    width:100%;
+  }
+
+  .opsV52Badge{
+    max-width:100%;
+    min-height:28px;
+    white-space:normal;
+  }
+
+  .opsV52RestaurantMeta{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(hover:none){
+  .opsV52DetailBtn:hover,
+  #page-admin .opsAdminStats div:hover,
+  .execTable > *:hover{
+    transform:none !important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .opsV52Insight,
+  .opsV52RestaurantSignature,
+  .execSpark svg,
+  .lineChart{
+    animation:none !important;
+  }
+}

@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070a0f">
+<meta name="color-scheme" content="dark light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dashboard OPS">
+<meta name="format-detection" content="telephone=no">
+<title>Dashboard OPS</title>
+<link rel="manifest" href="manifest.json?v=73">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon-salvatore-v73.png">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-salvatore-v73.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192-salvatore-v73.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512-salvatore-v73.png">
+<link rel="apple-touch-startup-image" href="icons/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="icons/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="styles.css?v=516">
+<link rel="stylesheet" href="v5-ui.css?v=100">
+<link rel="stylesheet" href="v5-1-ui.css?v=101">
+<link rel="stylesheet" href="v5-2-ui.css?v=108">
+<link rel="stylesheet" href="v5-3-restaurant.css?v=110">
+  <link rel="stylesheet" href="complaints-dashboard-v112.css?v=114">
+  <link rel="stylesheet" href="ops-performance-v509.css?v=509">
+  <link rel="stylesheet" href="ops-readability-v510.css?v=510">
+</head>
+<body>
+<div id="pwaLaunchSplash" class="pwaLaunchSplash" aria-hidden="true">
+  <div class="pwaLaunchGlow"></div>
+  <div class="pwaLaunchMark">
+    <img src="salvatore-logo.jpg" alt="">
+  </div>
+  <div class="pwaLaunchText">Dashboard OPS</div>
+</div>
+<div class="app">
+<header class="hero">
+  <div class="brand">
+    <div class="logo logoFull"><img src="salvatore-logo.jpg" alt="Pizza Salvatoré"></div>
+    <div>
+      <h1>Dashboard OPS</h1>
+      <p>Dashboard opérations, audits et rapports</p>
+      <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">Mode local</span></div>
+    </div>
+  </div>
+  <nav class="menu">
+    <button class="nav active" data-page="dashboard">🏠 Centre de contrôle</button>
+    <button class="nav" data-page="restaurant">🍕 Restaurants</button>
+    <button class="nav" data-page="inventory" type="button">📦 Inventaire</button>
+    <button class="nav" data-page="complaints">⚠️ Plaintes</button>
+    <button class="nav" data-page="reports">📈 Rapports</button>
+    <button class="nav" data-page="calendar" type="button">📅 Calendrier OPS</button>
+    <button class="nav" data-page="messages">✉️ Messages</button>
+    <button class="nav" data-page="tools" type="button" onclick="showPage('tools')">🧰 Outils</button>
+    <button class="nav" data-page="audit">✅ Audit</button>
+    <button class="nav opsAdminOnly hidden opsAdminRouteActive" data-page="admin" data-admin-section="users" type="button">⚙️ Admin</button>
+    <button class="nav" data-page="config">⚙️ Configuration</button>
+  </nav>
+</header>
+
+<main class="content">
+<section id="page-dashboard" class="page active execDashPage">
+  <div class="execDash is-loading" id="executiveDashboard">
+    <header class="execDashHero">
+      <div>
+        <p class="execEyebrow">Vue réseau globale</p>
+        <h2>Dashboard</h2>
+        <p class="execSub">Performance réseau, opérations et promos actives en temps réel.</p>
+      </div>
+      <div class="execControls">
+        <span class="execScopePill">Réseau complet</span>
+        <select id="dashWeek" aria-label="Période dashboard"></select>
+        <button class="execBtn" id="btnDashRefresh" type="button">Mettre à jour</button>
+        <button class="execBtn" id="btnNetworkPdf" type="button">Rapport PDF</button>
+      </div>
+    </header>
+
+    <div class="execKpiGrid">
+      <article class="execKpi green">
+        <div class="execKpiTop"><label>Ventes réseau</label></div>
+        <strong id="dashSales">—</strong>
+        <small id="execSalesTrend">Période sélectionnée</small>
+        <div class="execSpark" id="execSalesSpark"></div>
+      </article>
+      <article class="execKpi violet">
+        <div class="execKpiTop"><label>CSI réseau</label></div>
+        <strong id="dashCsi">—</strong>
+        <small>Objectif 88%</small>
+        <div class="execSpark" id="execCsiSpark"></div>
+      </article>
+      <article class="execKpi blue">
+        <div class="execKpiTop"><label>Délais réseau</label></div>
+        <strong id="dashDelay">—</strong>
+        <small>Moyenne livraison</small>
+        <div class="execSpark" id="execDelaySpark"></div>
+      </article>
+      <article class="execKpi red">
+        <div class="execKpiTop"><label>Plaintes réseau</label></div>
+        <strong id="execComplaintsKpi">—</strong>
+        <small id="execComplaintsCost">Coût total —</small>
+        <div class="execSpark" id="execComplaintSpark"></div>
+      </article>
+      <article class="execKpi amber">
+        <div class="execKpiTop"><label>Restaurants</label></div>
+        <strong id="execRestaurantCount">—</strong>
+        <small>Actifs sur le réseau</small>
+        <div class="execSpark" id="execRestaurantSpark"></div>
+      </article>
+      <article class="execKpi teal">
+        <div class="execKpiTop"><label>Promos actives</label></div>
+        <strong id="execPromoCount">—</strong>
+        <small>Calendrier OPS</small>
+        <div class="execSpark" id="execPromoSpark"></div>
+      </article>
+    </div>
+
+    <div class="execMainGrid">
+      <section class="execPanel">
+        <div class="execPanelHead"><h3>Top restaurants</h3><span id="execTopMeta">CSI / ventes / délais</span></div>
+        <div class="execTable" id="execTopRestaurants"></div>
+      </section>
+
+      <section class="execPanel danger">
+        <div class="execPanelHead"><h3>Restaurants en bas de classement</h3><span>À surveiller</span></div>
+        <div class="execTable" id="execBottomRestaurants"></div>
+      </section>
+
+      <section class="execPanel network">
+        <div class="execPanelHead"><h3>Réseau complet</h3><span>Restaurants actifs</span></div>
+        <div class="execTable" id="execNetworkRestaurants"></div>
+      </section>
+
+      <section class="execPanel csiGraph">
+        <div class="execPanelHead"><h3>CSI réseau</h3><span>Performance par restaurant</span></div>
+        <div class="execCsiGraph" id="execCsiGraph"></div>
+      </section>
+
+      <section class="execPanel promos">
+        <div class="execPanelHead"><h3>Promos actives</h3><span>Calendrier OPS</span></div>
+        <div class="execTable" id="execPromos"></div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<section id="page-tools" class="page toolsPage">
+  <div class="toolsHub" id="toolsHub">
+    <header class="toolsHero">
+      <div>
+        <p class="toolsEyebrow">Hub quotidien</p>
+        <h2>Outils</h2>
+        <p class="toolsSub">Accès rapide aux plateformes réseau et restaurant.</p>
+      </div>
+      <div class="toolsSearchWrap">
+        <span class="toolsSearchIcon">⌕</span>
+        <input id="toolsSearch" type="search" autocomplete="off" placeholder="Rechercher un outil">
+      </div>
+    </header>
+
+    <div class="toolsRestaurantRail" id="toolsRestaurantRail" aria-label="Restaurants"></div>
+
+    <div class="toolsOverview">
+      <section class="toolsPanel toolsFavoritesPanel">
+        <div class="toolsPanelHead">
+          <h3>Favoris</h3>
+          <span id="toolsFavoriteCount">—</span>
+        </div>
+        <div class="toolsCards compact" id="toolsFavorites"></div>
+      </section>
+      <section class="toolsPanel toolsRecentPanel">
+        <div class="toolsPanelHead">
+          <h3>Récemment utilisés</h3>
+          <span id="toolsRecentCount">—</span>
+        </div>
+        <div class="toolsCards compact" id="toolsRecent"></div>
+      </section>
+    </div>
+
+    <div class="toolsCategoryGrid" id="toolsCategoryGrid"></div>
+  </div>
+</section>
+
+<section id="page-inventory" class="page inventoryPage">
+  <div class="inventoryOps is-loading" id="inventoryOps">
+    <div class="inventorySkeleton">
+      <div></div><div></div><div></div>
+    </div>
+  </div>
+</section>
+
+<section id="page-restaurant" class="page">
+  <h2>Restaurants</h2>
+  <p class="subtitle">Fiche santé opérationnelle selon la semaine sélectionnée.</p>
+  <div class="controls">
+    <select id="profileRestaurant"></select>
+    <select id="profileWeek"></select>
+    <button class="btn red" id="btnProfileRefresh">Charger</button>
+    <button class="btn blue" id="btnProfilePdf">Exporter PDF</button>
+  </div>
+  <div id="profile"></div>
+</section>
+
+<section id="page-audit" class="page">
+  <h2>Audit / checklist</h2>
+  <p class="subtitle">Audit terrain avec photos et PDF.</p>
+  <div class="formGrid">
+    <div><label>Restaurant</label><select id="auditRestaurant"></select></div>
+    <div><label>CSI global</label><input id="auditCsi" type="number" placeholder="ex: 87.5"></div>
+    <div><label>Date</label><input id="auditDate" type="date"></div>
+    <div><label>CO</label><input id="auditCo" value="Alexandre Cloutier"></div>
+    <div class="full"><label>Résumé général</label><textarea id="auditNotes"></textarea></div>
+  </div>
+  <div class="controls">
+    <button class="btn red" id="btnSaveAudit">Sauvegarder</button>
+    <button class="btn blue" id="btnAuditPdf">Exporter PDF avec photos</button>
+    <button class="btn" id="btnResetAudit">Réinitialiser</button>
+  </div>
+  <div class="cards">
+    <div class="card"><label>Réponses</label><div class="value" id="auditAnswered">0</div><div class="note">questions répondues</div></div>
+    <div class="card"><label>Conformes</label><div class="value" id="auditOk">0</div><div class="note">standards respectés</div></div>
+    <div class="card"><label>Non conformes</label><div class="value" id="auditBad">0</div><div class="note">à corriger</div></div>
+    <div class="card"><label>Score</label><div class="value" id="auditScore">—</div><div class="note">automatique</div></div>
+  </div>
+  <div id="checklist" class="checklist"></div>
+</section>
+
+<section id="page-reports" class="page">
+  <h2>Rapports</h2>
+  <p class="subtitle">Historique local des audits sauvegardés.</p>
+  <div class="controls">
+    <button class="btn red" id="btnReportsRefresh">Rafraîchir</button>
+    <button class="btn blue" id="btnReportsCsv">Exporter CSV</button>
+  </div>
+  <div class="panel tableWrap">
+    <table>
+      <thead><tr><th>Date</th><th>Restaurant</th><th>CSI</th><th>Score</th><th>Non conformes</th><th>Actions</th></tr></thead>
+      <tbody id="reportsTable"><tr><td colspan="6">Aucun rapport.</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="page-messages" class="page">
+  <h2>Messages</h2>
+  <p class="subtitle">Générateur de message franchisé.</p>
+  <div class="formGrid">
+    <div><label>Restaurant</label><select id="msgRestaurant"></select></div><div><label>Semaine</label><select id="msgWeek"><option value="latest">Dernière semaine</option></select></div>
+    <div><label>Sujet</label><select id="msgSubject"><option>Global</option><option>CSI</option><option>Audit</option><option>Moyenne de facturation</option></select></div>
+    <div><label>Ventes</label><input id="msgSales"></div>
+    <div><label>CSI global</label><input id="msgCsi" type="number"></div>
+    <div><label>Délai</label><input id="msgDelay"></div>
+    <div><label>Augmentation ventes</label><input id="msgGrowth"></div>
+    <div class="full"><label>Contexte</label><textarea id="msgContext"></textarea></div>
+  </div>
+  <div class="controls"><button class="btn red" id="btnGenerateMsg">Générer</button><button class="btn blue" id="btnCopyMsg">Copier</button></div>
+  <div class="panel message" id="messageBox">Clique sur Générer.</div>
+</section>
+
+
+<section id="page-complaints" class="page">
+
+  <h2>Plaintes</h2>
+  <p class="subtitle">Centre de gestion des plaintes réseau — synchronisé avec le Google Sheet RAW.</p>
+
+  <div class="controls">
+    <select id="complaintRestaurant"><option value="Tous">Tous les restaurants</option></select>
+    <select id="complaintType"><option value="Tous">Tous les types</option></select>
+    
+    <select id="complaintQuickWeek"><option value="latest">Dernière semaine</option></select>
+    <input id="complaintDate" type="date">
+    <input id="complaintEndDate" type="date">
+
+    <button class="btn red" id="btnComplaintsApply">Appliquer</button>
+    <button class="btn blue" id="btnComplaintsSync">Synchroniser plaintes</button>
+  </div>
+
+  <div class="cards">
+    <div class="card"><label>Plaintes</label><div class="value" id="complaintsTotal">—</div><div class="note">période sélectionnée</div></div>
+    <div class="card"><label>Restaurant #1</label><div class="value" id="complaintsTopRestaurant">—</div><div class="note">plus de plaintes</div></div>
+    <div class="card"><label>Type #1</label><div class="value" id="complaintsTopType">—</div><div class="note">catégorie dominante</div></div>
+    <div class="card"><label>Suivi à faire</label><div class="value" id="complaintsOpen">—</div><div class="note">à surveiller</div></div>
+  </div>
+
+  <div class="panel">
+    <h3>Analyse plaintes OPS</h3>
+    <div id="complaintsOpsAnalysis" class="complaintsInsight">Synchronise les plaintes pour générer l’analyse.</div>
+  </div>
+
+  <div class="panel">
+    <h3>Répartition par type de plainte</h3>
+    <div id="complaintsTypeChart" class="complaintBarChart"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Liste des plaintes</h3>
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Restaurant</th>
+            <th>Type</th>
+            <th>Client</th>
+            <th>Valeur</th>
+            <th>Ticket</th>
+            <th>Détail</th>
+          </tr>
+        </thead>
+        <tbody id="complaintsTable">
+          <tr><td colspan="6">Aucune plainte synchronisée.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="page-config" class="page">
+  <h2>Configuration</h2>
+  <p class="subtitle">Supabase, Google Sheet et restaurants accessibles.</p>
+  <div class="configTabs">
+    <button class="configTab active" data-config="account">Compte / Supabase</button>
+    <button class="configTab" data-config="sheet">Google Sheet</button>
+    <button class="configTab" data-config="restaurants">Restaurants</button>
+  </div>
+  <div id="config-account" class="configPage active">
+    <div class="panel">
+      <h3>Supabase</h3>
+      <label>Supabase URL</label><input id="supabaseUrl">
+      <label>Anon public key</label><textarea id="supabaseKey"></textarea>
+      <div class="controls"><button class="btn red" id="btnSaveSupabase">Sauvegarder</button><button class="btn blue" id="btnTestSupabase">Tester</button></div>
+    </div>
+    <div class="panel">
+      <h3>Connexion</h3>
+      <label>Email</label><input id="loginEmail" type="email">
+      <label>Mot de passe</label><input id="loginPassword" type="password">
+      <div class="controls"><button class="btn red" id="btnSignIn">Connexion</button><button class="btn blue" id="btnSignUp">Créer compte</button><button class="btn" id="btnSignOut">Déconnexion</button></div>
+      <div class="alert" id="userStatus">Non connecté.</div>
+    </div>
+  </div>
+  <div id="config-sheet" class="configPage">
+    <div class="panel">
+      <h3>Google Sheet CSV</h3>
+      <label>Lien CSV publié</label><textarea id="sheetUrl"></textarea>
+      <label class="check"><input type="checkbox" id="sheetAuto"> Synchroniser automatiquement au chargement</label>
+      <div class="controls"><button class="btn red" id="btnSyncSheet">Synchroniser</button><button class="btn blue" id="btnSaveSheet">Sauvegarder le lien</button></div>
+      <div class="alert" id="sheetStatus">Aucune synchronisation.</div>
+<hr style="border-color:rgba(255,255,255,.08);margin:20px 0;">
+<h3>Google Sheet Plaintes — RAW</h3>
+<label>Lien CSV publié de l’onglet RAW</label><textarea id="complaintsCsvUrl" placeholder="Colle le lien CSV publié de l’onglet RAW...">https://docs.google.com/spreadsheets/d/e/2PACX-1vT8iD3fLPtv8V5z7ztEMqdJnCOhD32pRQsevAwXIexl6iwktRt_-eJQ1CgbXFiWSRgQQRi8ma9lvLv2/pub?gid=1258876961&amp;single=true&amp;output=csv</textarea>
+<label class="check"><input type="checkbox" id="complaintsAuto"> Synchroniser les plaintes automatiquement au chargement</label>
+<div class="controls"><button class="btn red" id="btnSaveComplaintsCsv">Sauvegarder le lien plaintes</button><button class="btn blue" id="btnSyncComplaintsConfig">Synchroniser plaintes</button></div>
+<div class="alert" id="complaintsStatus">Aucune synchronisation des plaintes.</div>
+    </div>
+  </div>
+  <div id="config-restaurants" class="configPage">
+    <div class="panel">
+      <h3>Restaurants du compte</h3>
+      <div id="restaurantAccess" class="restaurantAccessGrid"></div>
+      <div class="controls"><button class="btn red" id="btnSaveRestaurants">Sauvegarder</button><button class="btn blue" id="btnSelectAllRestaurants">Tout sélectionner</button></div>
+      <div class="alert" id="restaurantStatus">Sélection locale.</div>
+    </div>
+  </div>
+</section>
+
+<section id="page-admin" class="page opsAdminOnly hidden">
+  <h2>Administration</h2>
+  <p class="subtitle">Gestion des utilisateurs, restaurants et sources CSV.</p>
+  <div id="opsAdminRoot" class="opsAdminRoot">
+    <div class="panel">
+      <h3>Administration Supabase</h3>
+      <div class="alert">Connecte-toi avec un compte super admin pour charger les outils.</div>
+    </div>
+  </div>
+</section>
+
+<section id="page-complaintReports" class="page hidden">
+  <div class="heroCard">
+    <div>
+      <h1>Rapport Plaintes</h1>
+      <p>Analyse exécutive des plaintes et compensations.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="controls reportComplaintControls">
+      <div>
+        <label>Restaurant</label>
+        <select id="reportComplaintRestaurant"></select>
+      </div>
+
+      <div>
+        <label>Période</label>
+        <select id="reportComplaintPeriod">
+          <option value="current">Cette semaine OPS</option>
+          <option value="last">Semaine dernière</option>
+          <option value="month">30 derniers jours</option>
+          <option value="custom">Personnalisé</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Date début</label>
+        <input type="date" id="reportComplaintStart">
+      </div>
+
+      <div>
+        <label>Date fin</label>
+        <input type="date" id="reportComplaintEnd">
+      </div>
+
+      <div class="reportActions">
+        <button class="btn primary" onclick="generateComplaintReport()">Générer rapport</button>
+        <button class="btn" onclick="exportComplaintReportPdf()">Export PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="complaintReportContent"></div>
+</section>
+
+
+<section id="page-calendar" class="page">
+  <div class="pc409 pc409-ops">
+    <header class="pc409-topbar">
+      <div class="pc409-titleblock">
+        <h2>Calendrier OPS</h2>
+        <p>Tous les événements, promos et opérations du réseau</p>
+      </div>
+      <div class="pc409-top-actions">
+        <button class="pc409-action" id="pc409Today" type="button">Aujourd'hui</button>
+        <div class="pc409-segmented" aria-label="Vue calendrier">
+          <button class="active" type="button" data-pc409-view="month">Mois</button>
+          <button type="button" data-pc409-view="week">Semaine</button>
+          <button type="button" data-pc409-view="list">Liste</button>
+        </div>
+        <button class="pc409-action red" id="pc409AddManual" type="button">+ Ajouter un événement</button>
+        <label class="pc409-action pc409-upload">
+          <input type="file" id="pc409PdfUpload" accept=".pdf,.png,.jpg,.jpeg">
+          <span>Importer PDF</span>
+        </label>
+      </div>
+    </header>
+
+    <div class="pc409-shell">
+      <main class="pc409-calendar-card">
+        <div class="pc409-toolbar">
+          <div class="pc409-nav">
+            <button class="pc409-icon-btn" id="pc409Prev" type="button" aria-label="Mois précédent">‹</button>
+            <button class="pc409-icon-btn" id="pc409Next" type="button" aria-label="Mois suivant">›</button>
+          </div>
+          <h3 id="pc409Title">Avril 2026</h3>
+        </div>
+        <div id="pc409Grid" class="pc409-grid"></div>
+        <div class="pc409-strip-legend" aria-label="Légende calendrier">
+          <span><i class="promo"></i>Promo</span>
+          <span><i class="hockey"></i>Hockey</span>
+          <span><i class="sms"></i>SMS / Com.</span>
+          <span><i class="audit"></i>Audit</span>
+          <span><i class="ferie"></i>Férié</span>
+          <span><i class="ops"></i>Opérations</span>
+          <span><i class="autre"></i>Autre</span>
+        </div>
+      </main>
+
+      <aside class="pc409-detail-card pc409-side" id="pc409Detail">
+        <h3>Sélectionne une journée</h3>
+        <p>Les événements de la journée apparaîtront ici.</p>
+      </aside>
+    </div>
+
+    <div class="pc409-bottom-grid">
+      <section class="pc409-panel" id="pc409Upcoming">
+        <div class="pc409-panel-head">
+          <h3>Événements à venir</h3>
+          <button type="button" class="pc409-text-btn" data-pc409-view="list">Voir tout</button>
+        </div>
+      </section>
+
+      <section class="pc409-panel pc409-legend-panel">
+        <h3>Légende rapide</h3>
+        <div class="pc409-legend-list">
+          <span><i class="promo"></i>Promo</span>
+          <span><i class="hockey"></i>Hockey</span>
+          <span><i class="sms"></i>SMS / Communication</span>
+          <span><i class="audit"></i>Audit</span>
+          <span><i class="ferie"></i>Férié</span>
+          <span><i class="ops"></i>Opérations</span>
+          <span><i class="autre"></i>Autre</span>
+        </div>
+      </section>
+
+      <section class="pc409-panel pc409-import-panel">
+        <h3>Importer une promo (PDF)</h3>
+        <button class="pc409-dropzone" id="pc409ImportBottom" type="button">
+          <span class="pc409-upload-icon">⇧</span>
+          <strong>Choisir un fichier</strong>
+          <small>Le PDF sera analysé, puis validé avant ajout au calendrier.</small>
+        </button>
+        <p class="pc409-import-status" id="pc409ImportStatus"></p>
+      </section>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+
+
+<div id="complaintDetailViewer" class="auditViewer hidden">
+  <div class="auditViewerCard complaintDetailCard">
+    <div class="auditViewerHeader">
+      <h3>Détail de la plainte</h3>
+      <button class="btn" onclick="closeComplaintDetail()">Fermer</button>
+    </div>
+    <div id="complaintDetailContent"></div>
+  </div>
+</div>
+
+<div id="auditViewer" class="auditViewer hidden">
+  <div class="auditViewerCard">
+    <div class="auditViewerHeader">
+      <h3>Audit sauvegardé</h3>
+      <button class="btn" onclick="closeAuditViewer()">Fermer</button>
+    </div>
+    <div id="auditViewerContent"></div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+window.OPS_AUTH_REQUIRED = true;
+window.OPS_AUTH_READY = false;
+window.OPS_AUTH_CONFIG = {
+  supabaseUrl: "https://kbygjmcnntaoqmzfchta.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtieWdqbWNubnRhb3FtemZjaHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTQxMTMsImV4cCI6MjA5MzY5MDExM30.xy2nJsJDOOWIJr8_J-GdZKwjhsgMjaf2OcTpXf01sUA",
+  superAdminEmail: "a.cloutier@salvatore.com"
+};
+</script>
+<script src="app.js?v=513"></script>
+<script src="tools-hub.js?v=59"></script>
+
+<div class="pc409-modal hidden" id="pc409Modal">
+  <div class="pc409-modal-card">
+    <div class="pc409-modal-head">
+      <h3>Ajouter un événement</h3>
+      <button class="btn" id="pc409CloseModal" type="button">✕</button>
+    </div>
+
+    <div class="pc409-form">
+      <label>Titre
+        <input id="pc409EventTitle" type="text" placeholder="Ex: Promo Pizza 12''">
+      </label>
+
+      <label>Catégorie
+        <select id="pc409EventCategory">
+          <option value="promo">Promo</option>
+          <option value="hockey">Hockey</option>
+          <option value="sms">SMS</option>
+          <option value="audit">Audit</option>
+          <option value="ferie">Férié</option>
+          <option value="ops">OPS</option>
+          <option value="autre">Autre</option>
+        </select>
+      </label>
+
+      <label>Date début
+        <input id="pc409EventStart" type="date">
+      </label>
+
+      <label>Date fin
+        <input id="pc409EventEnd" type="date">
+      </label>
+
+      <label class="full">
+        Description
+        <textarea id="pc409EventDescription" placeholder="Description de l’événement"></textarea>
+      </label>
+    </div>
+
+    <div class="pc409-modal-actions">
+      <button class="btn" id="pc409CancelModal" type="button">Annuler</button>
+      <button class="btn red" id="pc409SaveEvent" type="button">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="pc409-modal hidden" id="pc409PdfReviewModal">
+  <div class="pc409-modal-card pc409-review-card">
+    <div class="pc409-modal-head">
+      <div>
+        <h3>Événements détectés dans le PDF</h3>
+        <p class="pc409-review-subtitle">Valide les événements avant de les ajouter au calendrier.</p>
+      </div>
+      <button class="btn" id="pc409CloseReview" type="button">✕</button>
+    </div>
+
+    <div class="pc409-review-toolbar">
+      <div class="pc409-review-pill" id="pc409ReviewCount">0 événement détecté</div>
+      <div class="pc409-review-pill muted">Import PDF V4.39</div>
+    </div>
+
+    <div id="pc409ReviewList" class="pc409-review-list"></div>
+
+    <div class="pc409-modal-actions">
+      <button class="btn" id="pc409CancelReview" type="button">Annuler</button>
+      <button class="btn red" id="pc409ConfirmReview" type="button">Ajouter au calendrier</button>
+    </div>
+  </div>
+</div>
+
+
+<script id="pc409-independent-calendar-v432">
+(function(){
+  const SEED_EVENTS = [{"title": "Menu 10$", "category": "promo", "start": "2025-05-12", "end": "2025-05-18", "description": "Menu 10$."}, {"title": "30% de rabais Wow30", "category": "promo", "start": "2025-10-10", "end": "2025-10-15", "description": "Code Wow30."}, {"title": "Extra fromage en grains gratuit", "category": "promo", "start": "2025-11-03", "end": "2025-11-09", "description": "Extra fromage en grains gratuit."}, {"title": "Black Friday Grandes pizzas 14.99$", "category": "promo", "start": "2025-11-24", "end": "2025-11-28", "description": "Black Friday."}, {"title": "10$ rabais pizzas moyennes", "category": "promo", "start": "2026-04-01", "end": "2026-04-30", "description": "Rabais pizzas moyennes."}, {"title": "15% Canadiens — jours de match seulement", "category": "ops", "start": "2026-04-18", "end": "2026-04-18", "description": "Seulement soirs de match."}, {"title": "Pizza La Double Étoilée", "category": "promo", "start": "2026-05-12", "end": "2026-05-12", "description": "Lancement Double Étoilée."}, {"title": "Pizzas 12'' à 12$", "category": "promo", "start": "2026-05-17", "end": "2026-05-21", "description": "Pizzas 12 pouces à 12$."}, {"title": "Promotion acquisition fidélité", "category": "promo", "start": "2026-06-01", "end": "2026-06-30", "description": "Petite poutine gratuite."}, {"title": "Produits locaux Saint-Jean", "category": "promo", "start": "2026-06-02", "end": "2026-06-26", "description": "Produits locaux."}, {"title": "Campagne déménagement", "category": "promo", "start": "2026-06-19", "end": "2026-07-05", "description": "Campagne déménagement."}, {"title": "SMS Double Étoilée", "category": "sms", "start": "2026-05-12", "end": "2026-05-12", "description": "SMS marketing."}, {"title": "SMS Double Étoilée", "category": "sms", "start": "2026-05-13", "end": "2026-05-13", "description": "SMS marketing."}, {"title": "SMS Double Étoilée", "category": "sms", "start": "2026-05-14", "end": "2026-05-14", "description": "SMS marketing."}, {"title": "SMS Pizzas 12'' 12$", "category": "sms", "start": "2026-05-18", "end": "2026-05-18", "description": "SMS marketing."}, {"title": "SMS Pizzas 12'' 12$", "category": "sms", "start": "2026-05-19", "end": "2026-05-19", "description": "SMS marketing."}, {"title": "SMS Pizzas 12'' 12$", "category": "sms", "start": "2026-05-20", "end": "2026-05-20", "description": "SMS marketing."}, {"title": "Lundi de Pâques", "category": "ferie", "start": "2026-04-06", "end": "2026-04-06", "description": "Férié Québec."}, {"title": "Fête nationale du Québec", "category": "ferie", "start": "2026-06-24", "end": "2026-06-24", "description": "Férié Québec."}, {"title": "Fête du Canada", "category": "ferie", "start": "2026-07-01", "end": "2026-07-01", "description": "Férié."}, {"title": "Noël", "category": "ferie", "start": "2026-12-25", "end": "2026-12-25", "description": "Férié."}];
+  const STORAGE_KEY = "pc409_manual_events";
+  const FEATURED_EVENTS = [
+    {
+      title: "PROMO HOCKEY CANADIENS",
+      category: "promo",
+      start: "2026-04-01",
+      end: "2026-04-01",
+      time: "19h00",
+      pdf: "Promo_Hockey_040126.pdf",
+      description: "Promo spéciale pour le match du Canadiens. À utiliser 2h avant le match. Message SMS et visuel inclus.",
+      objectives: ["Augmenter les ventes", "Maximiser les commandes livraisons", "Offrir une expérience WOW!"],
+      restaurants: ["Alma", "Jonquière", "Chicoutimi", "Roberval"],
+      kpi: { ventes: "+28%", csi: "-4%", plaintes: "+6%", delai: "+11 min" }
+    },
+    { title: "SMS FPS", category: "sms", start: "2026-04-03", end: "2026-04-03", description: "Envoi réseau.", time: "Envoi réseau" },
+    { title: "AUDIT ALMA MAPAQ", category: "audit", start: "2026-04-04", end: "2026-04-04", description: "Audit MAPAQ.", time: "Interne", restaurants: ["Alma"] },
+    { title: "LUNDI DE PÂQUES", category: "ferie", start: "2026-04-06", end: "2026-04-06", description: "Férié Québec." },
+    { title: "PROMO FROMAGE GRAINS", category: "promo", start: "2026-04-09", end: "2026-04-09", description: "Début de la promo fromage en grains.", time: "Début" },
+    { title: "MATCH CANADIENS", category: "hockey", start: "2026-04-11", end: "2026-04-11", description: "Match Canadiens.", time: "19h00" },
+    { title: "CAMPAGNE SMS", category: "ops", start: "2026-04-14", end: "2026-04-14", description: "Mardi Fous.", time: "Mardi Fous" },
+    { title: "AUDIT LÉVIS", category: "audit", start: "2026-04-16", end: "2026-04-16", description: "Audit interne.", time: "Interne", restaurants: ["Lévis"] },
+    { title: "SMS PÂQUES", category: "sms", start: "2026-04-21", end: "2026-04-21", description: "Envoi réseau.", time: "Envoi réseau" },
+    { title: "PROMO HOCKEY SÉRIES", category: "promo", start: "2026-04-24", end: "2026-04-24", description: "Début de la promo hockey séries.", time: "Début" },
+    { title: "RÉUNION CO", category: "autre", start: "2026-04-28", end: "2026-04-28", description: "Hebdomadaire CO.", time: "Hebdomadaire" }
+  ];
+  let currentDate = new Date(2026, 3, 1);
+  let currentView = "month";
+  const months = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  const $ = (id) => document.getElementById(id);
+  const pad = (n) => String(n).padStart(2,"0");
+  const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+  function getManualEvents(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+    catch(e){ return []; }
+  }
+
+  function saveManualEvents(events){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events || []));
+  }
+
+  function allEvents(){
+    const legacyEvents = SEED_EVENTS.filter(e => !String(e.start || "").startsWith("2026-04"));
+    return [...FEATURED_EVENTS, ...legacyEvents, ...getManualEvents()].map(e => ({
+      ...e,
+      title: e.title || "Événement",
+      category: e.category || "promo",
+      start: e.start,
+      end: e.end || e.start,
+      description: e.description || ""
+    }));
+  }
+
+  function icon(e){
+    if(e.category === "sms") return "🟠";
+    if(e.category === "hockey") return "🟢";
+    if(e.category === "audit") return "🔵";
+    if(e.category === "ferie"){
+      const t = String(e.title).toLowerCase();
+      if(t.includes("pâques") || t.includes("paques")) return "🐣";
+      if(t.includes("québec") || t.includes("nationale")) return "⚜️";
+      if(t.includes("canada")) return "🇨🇦";
+      if(t.includes("noël") || t.includes("noel")) return "🎄";
+      return "🟢";
+    }
+    if(e.category === "ops") return "⚫";
+    if(e.category === "autre") return "⚫";
+    return "🔴";
+  }
+
+  function visibleOnDay(e, date){
+    if(!e.start) return false;
+    if(e.category === "sms") return e.start === date;
+    if(e.start !== e.end) return e.start === date || e.end === date;
+    return e.start === date;
+  }
+
+  function label(e, date){
+    if(e.category === "promo" && e.start !== e.end){
+      if(date === e.start) return "🚀 Début — " + e.title;
+      if(date === e.end) return "🏁 Fin de la promotion — " + e.title;
+    }
+    return icon(e) + " " + e.title;
+  }
+
+  function eventLabel(e, date){
+    if(e.category === "promo" && e.start !== e.end){
+      if(date === e.start) return `${e.title} Début`;
+      if(date === e.end) return `${e.title} Fin`;
+    }
+    return e.time ? `${e.title} ${e.time}` : e.title;
+  }
+
+  function eventFitClass(text){
+    const len = String(text || "").length;
+    if(len > 42) return " tiny";
+    if(len > 26) return " compact";
+    return "";
+  }
+
+  function esc(value){
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#39;"
+    }[ch]));
+  }
+
+  function prettyDate(date){
+    const d = new Date(date + "T12:00:00");
+    return d.toLocaleDateString("fr-CA", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+  }
+
+  function categoryLabel(category){
+    return ({
+      promo:"PROMO",
+      hockey:"HOCKEY",
+      sms:"SMS / COM.",
+      audit:"AUDIT",
+      ferie:"FÉRIÉ",
+      ops:"OPÉRATIONS",
+      autre:"AUTRE"
+    })[category] || "ÉVÉNEMENT";
+  }
+
+  function eventsForDay(date){
+    return allEvents().filter(e => visibleOnDay(e, date));
+  }
+
+  function dateObj(date){
+    return new Date(date + "T12:00:00");
+  }
+
+  function startOfWeek(date){
+    const d = new Date(date);
+    d.setHours(12,0,0,0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d;
+  }
+
+  function shortDate(date){
+    return date.toLocaleDateString("fr-CA", { day:"numeric", month:"short" });
+  }
+
+  function eventDateRange(e){
+    if(e.end && e.end !== e.start) return `${prettyDate(e.start)} au ${prettyDate(e.end)}`;
+    return prettyDate(e.start);
+  }
+
+  function showDay(date){
+    const side = $("pc409Detail");
+    if(!side) return;
+
+    document.querySelectorAll(".pc409-day").forEach(d => {
+      d.classList.toggle("selected", d.getAttribute("data-date") === date);
+    });
+
+    const evs = eventsForDay(date);
+
+    if(!evs.length){
+      side.innerHTML = `
+        <div class="pc409-empty-detail">
+          <h3>${esc(prettyDate(date))}</h3>
+          <p>Aucun événement cette journée.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const featured = evs[0];
+    const restaurants = featured.restaurants?.length ? featured.restaurants : ["Tous les restaurants"];
+    side.innerHTML = `
+      <div class="pc409-detail-event">
+        <div class="pc409-detail-head">
+          <span class="pc409-pill ${esc(featured.category)}">${esc(categoryLabel(featured.category))}</span>
+        </div>
+        <h3>${esc(featured.title)}</h3>
+        <div class="pc409-meta-row"><span>📅</span><p>${esc(prettyDate(date))}</p></div>
+        <div class="pc409-meta-row"><span>🕒</span><p>${esc(featured.time || "Toute la journée")}</p></div>
+        <div class="pc409-meta-row"><span>👥</span><p>${esc(restaurants.join(", "))}</p></div>
+        ${featured.pdf ? `<div class="pc409-meta-row"><span>📄</span><p>PDF: <b>${esc(featured.pdf)}</b></p></div>` : ""}
+
+        <div class="pc409-detail-block">
+          <h4>Description</h4>
+          <p>${esc(featured.description || "Aucune description.")}</p>
+        </div>
+      </div>
+    `;
+  }
+
+  function monthEvents(){
+    const y = currentDate.getFullYear();
+    const m = currentDate.getMonth();
+    const prefix = `${y}-${pad(m + 1)}`;
+    return allEvents()
+      .filter(e => String(e.start || "").slice(0, 7) === prefix)
+      .sort((a, b) => String(a.start).localeCompare(String(b.start)));
+  }
+
+  function renderPanels(){
+    const events = monthEvents();
+    const upcoming = $("pc409Upcoming");
+
+    if(upcoming){
+      const items = events.slice(0, 4);
+      upcoming.innerHTML = `
+        <div class="pc409-panel-head">
+          <h3>Événements à venir</h3>
+          <button type="button" class="pc409-text-btn" data-pc409-view="list">Voir tout</button>
+        </div>
+        <div class="pc409-upcoming-list">
+          ${items.length ? items.map(e => `
+            <button type="button" class="pc409-upcoming-item" data-date="${esc(e.start)}">
+              <i class="${esc(e.category)}"></i>
+              <span><strong>${esc(e.title)}</strong><small>${esc(new Date(e.start + "T12:00:00").toLocaleDateString("fr-CA", { day:"numeric", month:"long", year:"numeric" }))}${e.time ? ` - ${esc(e.time)}` : ""}</small></span>
+            </button>
+          `).join("") : `<p class="pc409-muted">Aucun événement à venir ce mois-ci.</p>`}
+        </div>
+      `;
+      upcoming.querySelectorAll("[data-date]").forEach(btn => btn.onclick = () => showDay(btn.dataset.date));
+      upcoming.querySelectorAll("[data-pc409-view]").forEach(btn => {
+        btn.onclick = () => setCalendarView(btn.getAttribute("data-pc409-view") || "month");
+      });
+    }
+  }
+
+  function renderMonthView(){
+    const title = $("pc409Title");
+    const grid = $("pc409Grid");
+
+    if(!title || !grid) return;
+    grid.className = "pc409-grid";
+
+    const y = currentDate.getFullYear();
+    const m = currentDate.getMonth();
+
+    title.textContent = `${months[m]} ${y}`;
+
+    const first = new Date(y, m, 1);
+    const offset = (first.getDay() + 6) % 7;
+    const gridStart = new Date(y, m, 1, 12);
+    gridStart.setDate(gridStart.getDate() - offset);
+
+    let html = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"]
+      .map(d => `<div class="pc409-head">${d}</div>`)
+      .join("");
+
+    for(let i=0; i<42; i++){
+      const cell = new Date(gridStart);
+      cell.setDate(gridStart.getDate() + i);
+      const date = fmt(cell);
+      const day = cell.getDate();
+      const muted = cell.getMonth() !== m ? " muted" : "";
+      const evs = eventsForDay(date);
+
+      html += `
+        <button type="button" class="pc409-day${muted}" data-date="${date}">
+          <div class="pc409-num">${day}</div>
+          ${evs.slice(0,3).map(e => {
+            const text = eventLabel(e, date);
+            return `<div class="pc409-event ${esc(e.category)}${eventFitClass(text)}">${esc(text)}</div>`;
+          }).join("")}
+          ${evs.length > 3 ? `<div class="pc409-overflow">+${evs.length - 3}</div>` : ""}
+        </button>
+      `;
+    }
+
+    grid.innerHTML = html;
+
+    grid.querySelectorAll(".pc409-day").forEach(btn => {
+      btn.onclick = () => showDay(btn.getAttribute("data-date"));
+    });
+
+    const firstEvent = allEvents().find(e => String(e.start || "").slice(0,7) === `${y}-${pad(m+1)}`);
+    showDay(firstEvent?.start || fmt(new Date(y, m, 1, 12)));
+    renderPanels();
+  }
+
+  function renderWeekView(){
+    const title = $("pc409Title");
+    const grid = $("pc409Grid");
+    if(!title || !grid) return;
+
+    const start = startOfWeek(currentDate);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    title.textContent = `Semaine du ${shortDate(start)} au ${shortDate(end)} ${end.getFullYear()}`;
+    grid.className = "pc409-grid pc409-week-grid";
+
+    const days = [];
+    for(let i=0; i<7; i++){
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      days.push(d);
+    }
+
+    let html = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"]
+      .map(d => `<div class="pc409-head">${d}</div>`)
+      .join("");
+
+    days.forEach(d => {
+      const date = fmt(d);
+      const evs = eventsForDay(date);
+      html += `
+        <button type="button" class="pc409-day pc409-week-day" data-date="${date}">
+          <div class="pc409-num">${d.getDate()}</div>
+          <small class="pc409-week-date">${esc(d.toLocaleDateString("fr-CA", { weekday:"long", day:"numeric", month:"long" }))}</small>
+          ${evs.length ? evs.map(e => {
+            const text = eventLabel(e, date);
+            return `<div class="pc409-event ${esc(e.category)}${eventFitClass(text)}">${esc(text)}</div>`;
+          }).join("") : `<div class="pc409-empty-slot">Aucun événement</div>`}
+        </button>
+      `;
+    });
+
+    grid.innerHTML = html;
+    grid.querySelectorAll(".pc409-day").forEach(btn => {
+      btn.onclick = () => showDay(btn.getAttribute("data-date"));
+    });
+
+    const firstEventDate = days.map(fmt).find(date => eventsForDay(date).length);
+    showDay(firstEventDate || fmt(start));
+    renderPanels();
+  }
+
+  function renderListView(){
+    const title = $("pc409Title");
+    const grid = $("pc409Grid");
+    if(!title || !grid) return;
+
+    const y = currentDate.getFullYear();
+    const m = currentDate.getMonth();
+    const events = monthEvents();
+    title.textContent = `Liste — ${months[m]} ${y}`;
+    grid.className = "pc409-list";
+
+    grid.innerHTML = events.length ? events.map(e => `
+      <button type="button" class="pc409-list-item" data-date="${esc(e.start)}">
+        <span class="pc409-list-dot ${esc(e.category)}"></span>
+        <span class="pc409-list-date">${esc(eventDateRange(e))}</span>
+        <strong>${esc(e.title)}</strong>
+        <small>${esc(e.time || categoryLabel(e.category))}${e.description ? ` — ${esc(e.description)}` : ""}</small>
+      </button>
+    `).join("") : `
+      <div class="pc409-list-empty">
+        <h4>Aucun événement</h4>
+        <p>Aucun événement inscrit pour ${esc(months[m])} ${y}.</p>
+      </div>
+    `;
+
+    grid.querySelectorAll(".pc409-list-item").forEach(btn => {
+      btn.onclick = () => showDay(btn.getAttribute("data-date"));
+    });
+
+    if(events[0]) showDay(events[0].start);
+    else showDay(fmt(new Date(y, m, 1, 12)));
+    renderPanels();
+  }
+
+  function setCalendarView(view){
+    currentView = view || "month";
+    document.querySelectorAll(".pc409-segmented button").forEach(item => {
+      item.classList.toggle("active", item.getAttribute("data-pc409-view") === currentView);
+    });
+    renderCalendar();
+  }
+
+  function renderCalendar(){
+    if(currentView === "week") return renderWeekView();
+    if(currentView === "list") return renderListView();
+    return renderMonthView();
+  }
+
+  function openManualModal(){
+    const modal = $("pc409Modal");
+    if(modal) modal.classList.remove("hidden");
+
+    const today = fmt(new Date());
+    if($("pc409EventStart") && !$("pc409EventStart").value) $("pc409EventStart").value = today;
+    if($("pc409EventEnd") && !$("pc409EventEnd").value) $("pc409EventEnd").value = today;
+  }
+
+  function closeManualModal(){
+    const modal = $("pc409Modal");
+    if(modal) modal.classList.add("hidden");
+  }
+
+  function saveManual(){
+    const title = $("pc409EventTitle")?.value?.trim();
+    const category = $("pc409EventCategory")?.value || "promo";
+    const start = $("pc409EventStart")?.value;
+    const end = $("pc409EventEnd")?.value || start;
+    const description = $("pc409EventDescription")?.value || "";
+
+    if(!title || !start){
+      alert("Ajoute un titre et une date.");
+      return;
+    }
+
+    const manual = getManualEvents();
+    manual.push({title, category, start, end, description});
+    saveManualEvents(manual);
+
+    closeManualModal();
+    renderCalendar();
+  }
+
+  const PDFJS_MODULE = "./vendor/pdfjs/pdf.min.mjs";
+  const PDFJS_WORKER = "./vendor/pdfjs/pdf.worker.min.mjs";
+  let pdfJsPromise = null;
+
+  function setImportStatus(message, tone){
+    const status = $("pc409ImportStatus");
+    if(!status) return;
+    status.textContent = message || "";
+    status.dataset.tone = tone || "";
+  }
+
+  async function ensurePdfJs(){
+    if(window.pdfjsLib?.getDocument){
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+      return window.pdfjsLib;
+    }
+
+    if(!pdfJsPromise){
+      pdfJsPromise = import(PDFJS_MODULE).then(pdfjs => {
+        if(!pdfjs?.getDocument) throw new Error("Lecteur PDF indisponible.");
+        pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+        window.pdfjsLib = pdfjs;
+        return pdfjs;
+      });
+    }
+
+    return pdfJsPromise;
+  }
+
+  function normalizeImportText(value){
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[’`]/g, "'")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function cleanFileTitle(fileName){
+    return String(fileName || "PDF importe")
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[_-]+/g, " ")
+      .replace(/\b\d{6,8}\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim() || "Promotion importee";
+  }
+
+  function monthNumber(value){
+    const m = normalizeImportText(value).toLowerCase();
+    return {
+      janvier:1, jan:1,
+      fevrier:2, fev:2, feb:2,
+      mars:3, mar:3,
+      avril:4, avr:4, apr:4,
+      mai:5, may:5,
+      juin:6, jun:6,
+      juillet:7, juil:7, jul:7,
+      aout:8, aug:8,
+      septembre:9, sept:9, sep:9,
+      octobre:10, oct:10,
+      novembre:11, nov:11,
+      decembre:12, dec:12
+    }[m] || null;
+  }
+
+  function makeIso(year, month, day){
+    const y = Number(year) < 100 ? 2000 + Number(year) : Number(year);
+    const m = Number(month);
+    const d = Number(day);
+    const date = new Date(y, m - 1, d, 12);
+    if(date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return null;
+    if(y < 2000 || y > 2099) return null;
+    return fmt(date);
+  }
+
+  function parseDateSignals(text, fileName){
+    const combined = normalizeImportText(`${text || ""} ${fileName || ""}`).toLowerCase();
+    const dates = new Set();
+    const ranges = [];
+    const monthPattern = "janvier|jan|fevrier|fev|feb|mars|mar|avril|avr|apr|mai|may|juin|jun|juillet|juil|jul|aout|septembre|sept|sep|octobre|oct|novembre|nov|decembre|dec";
+    const defaultYear = currentDate?.getFullYear?.() || new Date().getFullYear();
+
+    const addDate = (iso) => { if(iso) dates.add(iso); };
+    const addRange = (start, end) => {
+      if(!start || !end) return;
+      const sorted = [start, end].sort();
+      ranges.push({start: sorted[0], end: sorted[1]});
+      addDate(sorted[0]);
+      addDate(sorted[1]);
+    };
+
+    [...combined.matchAll(/\b(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})\b/g)]
+      .forEach(m => addDate(makeIso(m[1], m[2], m[3])));
+
+    [...combined.matchAll(/\b(\d{1,2})[-\/.](\d{1,2})[-\/.](20\d{2})\b/g)]
+      .forEach(m => addDate(makeIso(m[3], m[2], m[1])));
+
+    [...combined.matchAll(new RegExp(`\\b(?:du\\s*)?(\\d{1,2})(?:er)?\\s*(?:au|a|-|–|—)\\s*(\\d{1,2})(?:er)?\\s+(${monthPattern})\\s+(20\\d{2})\\b`, "g"))]
+      .forEach(m => {
+        const month = monthNumber(m[3]);
+        addRange(makeIso(m[4], month, m[1]), makeIso(m[4], month, m[2]));
+      });
+
+    [...combined.matchAll(new RegExp(`\\b(?:du\\s*)?(\\d{1,2})(?:er)?\\s+(${monthPattern})\\s*(?:au|a|-|–|—)\\s*(\\d{1,2})(?:er)?\\s+(${monthPattern})\\s+(20\\d{2})\\b`, "g"))]
+      .forEach(m => {
+        addRange(makeIso(m[5], monthNumber(m[2]), m[1]), makeIso(m[5], monthNumber(m[4]), m[3]));
+      });
+
+    [...combined.matchAll(new RegExp(`\\b(\\d{1,2})(?:er)?\\s+(${monthPattern})\\s+(20\\d{2})\\b`, "g"))]
+      .forEach(m => addDate(makeIso(m[3], monthNumber(m[2]), m[1])));
+
+    [...combined.matchAll(/\b(20\d{2})(\d{2})(\d{2})\b/g)]
+      .forEach(m => addDate(makeIso(m[1], m[2], m[3])));
+
+    [...combined.matchAll(/\b(\d{2})(\d{2})(\d{2})\b/g)]
+      .forEach(m => {
+        const a = Number(m[1]);
+        const b = Number(m[2]);
+        const y = 2000 + Number(m[3]);
+        const iso = a <= 12 ? makeIso(y, a, b) : makeIso(y, b, a);
+        addDate(iso);
+      });
+
+    const sortedDates = [...dates].sort();
+    return { dates: sortedDates, ranges };
+  }
+
+  function detectPromoTitle(text, fileName){
+    const combined = normalizeImportText(`${text || ""} ${fileName || ""}`).toLowerCase();
+    if(combined.includes("black friday")) return "Black Friday";
+    if(combined.includes("fromage en grains")) return "Extra fromage en grains gratuit";
+    if(combined.includes("double etoilee")) return "Pizza La Double Etoilee";
+    if(combined.includes("canadiens") || combined.includes("hockey")) return "Promo hockey";
+    if(combined.includes("wow30") || combined.includes("30%")) return "30% de rabais Wow30";
+    if(combined.includes("menu 10") || combined.includes("10$")) return "Menu 10$";
+    if(combined.includes("12$") || combined.includes("12 pouces") || combined.includes("12''")) return "Pizzas 12'' a 12$";
+    if(combined.includes("demenagement")) return "Campagne demenagement";
+
+    const lines = String(text || "")
+      .split(/\r?\n/)
+      .map(line => line.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+
+    const dateWords = /20\d{2}|janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre|\d{1,2}[\/.-]\d{1,2}/i;
+    const reject = /salvatore|restaurant|restaurants|telephone|www\.|http|conditions|valide|validite|debut|fin|date|pdf|coupon/i;
+    const lineTitle = lines.find(line => line.length >= 4 && line.length <= 70 && !dateWords.test(normalizeImportText(line)) && !reject.test(normalizeImportText(line)));
+
+    return lineTitle || cleanFileTitle(fileName);
+  }
+
+  function detectImportCategory(text, fileName){
+    const combined = normalizeImportText(`${text || ""} ${fileName || ""}`).toLowerCase();
+    if(/audit|mapaq|inspection/.test(combined)) return "audit";
+    if(/ferie|conge|paques|noel|canada|nationale du quebec/.test(combined)) return "ferie";
+    if(/promo|promotion|rabais|gratuit|coupon|double etoilee|fromage en grains|wow30|menu 10|12 pouces|12''|demenagement/.test(combined)) return "promo";
+    if(/sms|texto|communication|courriel|email/.test(combined) && !/promo|promotion|rabais|gratuit|coupon/.test(combined)) return "sms";
+    if(/operation|ops|war room|reunion/.test(combined)) return "ops";
+    if(/hockey|canadiens|match/.test(combined)) return "hockey";
+    return "promo";
+  }
+
+  function parseSmsDates(text, fileName){
+    const raw = String(text || "");
+    const lines = raw
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean);
+    const smsSegments = [...raw.matchAll(/(?:sms|texto|communication|courriel|email)[^.;\n\r]{0,120}/gi)].map(m => m[0]);
+    const smsLines = lines.filter(line => /sms|texto|communication|courriel|email/i.test(normalizeImportText(line)));
+    const smsSources = smsSegments.length ? smsSegments : smsLines;
+    const fromLines = smsSources.flatMap(line => parseDateSignals(line, "").dates);
+    const fromFileName = /sms|texto|communication|courriel|email/i.test(normalizeImportText(fileName))
+      ? parseDateSignals("", fileName).dates
+      : [];
+    return [...new Set([...fromLines, ...fromFileName])].sort();
+  }
+
+  async function extractPdfText(file){
+    const isPdf = /pdf/i.test(file.type || "") || /\.pdf$/i.test(file.name || "");
+    if(!isPdf) return "";
+
+    const pdfjs = await ensurePdfJs();
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(buffer), useSystemFonts: true }).promise;
+    const pageLimit = Math.min(pdf.numPages || 0, 25);
+    const pages = [];
+
+    for(let pageNumber = 1; pageNumber <= pageLimit; pageNumber++){
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent();
+      pages.push((content.items || []).map(item => item.str || "").join(" "));
+    }
+
+    if(pdf.destroy) await pdf.destroy().catch(() => {});
+    return pages.join("\n").trim();
+  }
+
+  function withPdfTimeout(promise, ms){
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Analyse PDF trop longue.")), ms);
+      })
+    ]);
+  }
+
+  function buildEventsFromText(text, fileName){
+    const title = detectPromoTitle(text, fileName);
+    const category = detectImportCategory(text, fileName);
+    const signals = parseDateSignals(text, fileName);
+    const smsDates = parseSmsDates(text, fileName);
+    const normalized = normalizeImportText(`${text || ""} ${fileName || ""}`).toLowerCase();
+    const sourceNote = text
+      ? `Texte PDF lu (${text.length} caracteres).`
+      : "Texte PDF non lisible automatiquement; detection basee sur le nom du fichier.";
+    const events = [];
+
+    const addEvent = (event) => {
+      if(!event.start) return;
+      events.push({
+        title: event.title || title,
+        category: event.category || category,
+        start: event.start,
+        end: event.end || event.start,
+        description: `${sourceNote} Source : ${fileName}.`,
+        note: sourceNote
+      });
+    };
+
+    if(category !== "sms" && signals.ranges.length){
+      const range = signals.ranges[0];
+      addEvent({ title, category, start: range.start, end: range.end });
+    }else if(category !== "sms" && signals.dates.length >= 2){
+      addEvent({ title, category, start: signals.dates[0], end: signals.dates[signals.dates.length - 1] });
+    }else if(signals.dates.length === 1){
+      addEvent({ title, category, start: signals.dates[0], end: signals.dates[0] });
+    }
+
+    const datesForSms = smsDates.length ? smsDates : (category === "sms" ? signals.dates : []);
+    if(normalized.includes("sms") && datesForSms.length){
+      datesForSms.forEach(date => {
+        addEvent({
+          title: "SMS - " + title,
+          category: "sms",
+          start: date,
+          end: date
+        });
+      });
+    }
+
+    if(!events.length){
+      const today = fmt(new Date());
+      addEvent({
+        title: title + " - date a valider",
+        category: category === "sms" ? "sms" : "promo",
+        start: today,
+        end: today
+      });
+      events[0].description += " Aucune date claire detectee; corriger avant ajout.";
+      events[0].note = "Aucune date claire detectee. Valide la date avant d'ajouter.";
+    }
+
+    const seen = new Set();
+    return events.filter(event => {
+      const key = `${event.title}|${event.category}|${event.start}|${event.end}`;
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  async function buildEventsFromFile(file){
+    const text = await withPdfTimeout(extractPdfText(file), 12000);
+    return buildEventsFromText(text, file.name || "PDF importe");
+  }
+
+  async function importCalendarFile(file){
+    setImportStatus("Analyse du PDF en cours...", "loading");
+
+    try{
+      const events = await buildEventsFromFile(file);
+      openReview(events);
+      setImportStatus(`${events.length} evenement(s) detecte(s). Valide avant ajout.`, "ok");
+    }catch(error){
+      console.warn("Import PDF limite", error);
+      const events = buildEventsFromText("", file.name || "PDF importe");
+      events.forEach(event => {
+        event.description += ` Lecture PDF incomplete : ${error.message || error}.`;
+        event.note = "Lecture PDF incomplete. Les champs sont a valider.";
+      });
+      openReview(events);
+      setImportStatus("Lecture PDF incomplete. Valide les champs avant ajout.", "warn");
+    }
+  }
+
+  function openReview(events){
+    window.__pc409DetectedEvents = events || [];
+    const modal = $("pc409PdfReviewModal");
+    const list = $("pc409ReviewList");
+    const count = $("pc409ReviewCount");
+
+    if(!modal || !list) return;
+
+    if(count) count.textContent = `${window.__pc409DetectedEvents.length} événement(s) détecté(s)`;
+
+    list.innerHTML = window.__pc409DetectedEvents.map((e,i) => `
+      <div class="pc409-review-item" data-index="${i}">
+        ${e.note ? `<p class="pc409-review-note">${esc(e.note)}</p>` : ""}
+        <div class="pc409-review-form">
+          <label>Titre<input data-field="title" value="${esc(e.title)}"></label>
+          <label>Catégorie
+            <select data-field="category">
+              <option value="promo" ${e.category==="promo"?"selected":""}>Promo</option>
+              <option value="hockey" ${e.category==="hockey"?"selected":""}>Hockey</option>
+              <option value="sms" ${e.category==="sms"?"selected":""}>SMS</option>
+              <option value="audit" ${e.category==="audit"?"selected":""}>Audit</option>
+              <option value="ferie" ${e.category==="ferie"?"selected":""}>Férié</option>
+              <option value="ops" ${e.category==="ops"?"selected":""}>OPS</option>
+              <option value="autre" ${e.category==="autre"?"selected":""}>Autre</option>
+            </select>
+          </label>
+          <label>Date début<input type="date" data-field="start" value="${e.start}"></label>
+          <label>Date fin<input type="date" data-field="end" value="${e.end || e.start}"></label>
+          <label class="full">Description<textarea data-field="description">${esc(e.description || "")}</textarea></label>
+        </div>
+      </div>
+    `).join("");
+
+    modal.classList.remove("hidden");
+  }
+
+  function closeReview(){
+    const modal = $("pc409PdfReviewModal");
+    if(modal) modal.classList.add("hidden");
+  }
+
+  function collectReview(){
+    return [...document.querySelectorAll(".pc409-review-item")].map(item => {
+      const get = f => item.querySelector(`[data-field="${f}"]`)?.value || "";
+      return {
+        title: get("title").trim(),
+        category: get("category") || "promo",
+        start: get("start"),
+        end: get("end") || get("start"),
+        description: get("description")
+      };
+    }).filter(e => e.title && e.start);
+  }
+
+  function eventKey(event){
+    return `${String(event.title || "").trim().toLowerCase()}|${event.category || "promo"}|${event.start || ""}|${event.end || event.start || ""}`;
+  }
+
+  function confirmReview(){
+    const events = collectReview();
+    if(!events.length){
+      alert("Aucun événement valide.");
+      return;
+    }
+
+    const manual = getManualEvents();
+    const known = new Set(allEvents().map(eventKey));
+    const added = [];
+    const skipped = [];
+
+    events.forEach(event => {
+      const key = eventKey(event);
+      if(known.has(key)){
+        skipped.push(event);
+        return;
+      }
+      known.add(key);
+      added.push(event);
+      manual.push(event);
+    });
+
+    saveManualEvents(manual);
+
+    closeReview();
+    renderCalendar();
+    if(added.length){
+      alert(`${added.length} événement(s) ajouté(s).${skipped.length ? ` ${skipped.length} doublon(s) ignoré(s).` : ""}`);
+    }else{
+      alert("Aucun nouvel événement ajouté : tout était déjà présent.");
+    }
+  }
+
+  function setupCalendar(){
+    const prev = $("pc409Prev");
+    const next = $("pc409Next");
+    const today = $("pc409Today");
+    const add = $("pc409AddManual");
+    const close = $("pc409CloseModal");
+    const cancel = $("pc409CancelModal");
+    const save = $("pc409SaveEvent");
+    let upload = $("pc409PdfUpload");
+    const importBottom = $("pc409ImportBottom");
+    const reviewClose = $("pc409CloseReview");
+    const reviewCancel = $("pc409CancelReview");
+    const reviewConfirm = $("pc409ConfirmReview");
+
+    if(upload){
+      const cleanUpload = upload.cloneNode(true);
+      upload.replaceWith(cleanUpload);
+      upload = cleanUpload;
+    }
+
+    if(prev) prev.onclick = () => {
+      if(currentView === "week") currentDate.setDate(currentDate.getDate() - 7);
+      else currentDate.setMonth(currentDate.getMonth()-1);
+      renderCalendar();
+    };
+    if(next) next.onclick = () => {
+      if(currentView === "week") currentDate.setDate(currentDate.getDate() + 7);
+      else currentDate.setMonth(currentDate.getMonth()+1);
+      renderCalendar();
+    };
+    if(today) today.onclick = () => { currentDate = new Date(); renderCalendar(); };
+
+    if(add) add.onclick = openManualModal;
+    if(close) close.onclick = closeManualModal;
+    if(cancel) cancel.onclick = closeManualModal;
+    if(save) save.onclick = saveManual;
+
+    if(upload){
+      upload.addEventListener("change", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const file = e.target.files?.[0];
+        if(!file) return;
+        await importCalendarFile(file);
+        upload.value = "";
+      }, true);
+    }
+
+    if(importBottom && upload){
+      importBottom.onclick = () => upload.click();
+    }
+
+    document.querySelectorAll("[data-pc409-view]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        setCalendarView(btn.getAttribute("data-pc409-view") || "month");
+      });
+    });
+
+    if(reviewClose) reviewClose.onclick = closeReview;
+    if(reviewCancel) reviewCancel.onclick = closeReview;
+    if(reviewConfirm) reviewConfirm.onclick = confirmReview;
+
+    document.querySelectorAll('[data-page="calendar"]').forEach(btn => {
+      btn.addEventListener("click", () => setTimeout(renderCalendar, 40));
+    });
+
+    renderCalendar();
+  }
+
+  window.renderPc409Calendar = renderCalendar;
+  window.renderNativeCalendar = renderCalendar;
+  window.pc409GetCalendarEvents = allEvents;
+  window.pc409PdfImportTools = {
+    buildEventsFromText,
+    parseDateSignals,
+    extractPdfText,
+    importCalendarFile
+  };
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", setupCalendar);
+  }else{
+    setupCalendar();
+  }
+})();
+</script>
+<script src="complaints-isolated-v31.js?v=99"></script>
+  <script src="complaints-dashboard-v112.js?v=509"></script>
+<script src="executive-dashboard.js?v=76"></script>
+<script src="premium-reports.js?v=67"></script>
+<script src="ops-intelligence.js?v=509"></script>
+<script src="src/config/aiConfig.js?v=522"></script>
+<script src="src/services/aiProvider.js?v=522"></script>
+<script src="aiProvider.js?v=522"></script>
+<script src="ops-ai-access.js?v=522"></script>
+<script src="ops-ai-director.js?v=509"></script>
+<script src="ops-ai-assistant.js?v=522"></script>
+<script src="restaurant-profile-v53.js?v=111"></script>
+<script src="ops-enterprise-surfaces.js?v=109"></script>
+<script type="module" src="inventory-command.js?v=512"></script>
+<script src="pwa.js?v=84"></script>
+<script src="ops-readability-v510.js?v=510"></script>
+<script src="admin-center-v513.js?v=516"></script>
+<script src="ops-auth.js?v=515"></script>
+
+</body>
+</html>

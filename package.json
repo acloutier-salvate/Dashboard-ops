@@ -1,0 +1,13 @@
+{
+  "name": "dashboard-ops",
+  "version": "5.23.0",
+  "private": true,
+  "description": "Dashboard OPS Pizza Salvatore",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "openai": "^4.104.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

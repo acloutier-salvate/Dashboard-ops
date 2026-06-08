@@ -1,0 +1,157 @@
+/* Dashboard OPS V5.10 - lisibilite et protection anti-superposition. */
+
+#page-complaints .cfPdfBtn,
+#page-complaints button.cfPdfBtn{
+  background-color:#e8f1fb !important;
+  background-image:linear-gradient(180deg,#f8fbff,#ddeaf8) !important;
+  color:#0f172a !important;
+  border-color:rgba(148,163,184,.55) !important;
+}
+
+.pc409-ops .pc409-event{
+  position:relative;
+  z-index:1;
+}
+
+.pc409-ops .pc409-event.promo,
+.pc409-ops .pc409-pill.promo{
+  background-color:#c91422 !important;
+  background-image:linear-gradient(135deg,#e0262d,#b9101d) !important;
+}
+
+.pc409-ops .pc409-event.hockey,
+.pc409-ops .pc409-pill.hockey{
+  background-color:#268d40 !important;
+  background-image:linear-gradient(135deg,#35a852,#21833b) !important;
+}
+
+.pc409-ops .pc409-event.sms,
+.pc409-ops .pc409-pill.sms{
+  background-color:#ef6f00 !important;
+  background-image:linear-gradient(135deg,#ff8500,#ea5f00) !important;
+  color:#fff !important;
+}
+
+.pc409-ops .pc409-event.audit,
+.pc409-ops .pc409-pill.audit{
+  background-color:#1d63cf !important;
+  background-image:linear-gradient(135deg,#2f73db,#1557c8) !important;
+}
+
+.pc409-ops .pc409-event.ferie,
+.pc409-ops .pc409-pill.ferie{
+  background-color:#2a913d !important;
+  background-image:linear-gradient(135deg,#3cae49,#22813a) !important;
+}
+
+.pc409-ops .pc409-event.ops,
+.pc409-ops .pc409-pill.ops{
+  background-color:#6141aa !important;
+  background-image:linear-gradient(135deg,#7253be,#56389d) !important;
+}
+
+.pc409-ops .pc409-event.autre,
+.pc409-ops .pc409-pill.autre{
+  background-color:#2c3745 !important;
+  background-image:linear-gradient(135deg,#3d4856,#202938) !important;
+}
+
+.pc409-modal-head button,
+.opsRestaurantProfileDialog header button,
+.opsAiClose{
+  position:relative;
+  z-index:3;
+  flex:0 0 auto;
+}
+
+#page-inventory input,
+#page-inventory select,
+#page-inventory textarea,
+#page-inventory button{
+  position:relative;
+  z-index:1;
+}
+
+#page-inventory input::placeholder,
+#page-inventory textarea::placeholder{
+  color:rgba(226,232,240,.72) !important;
+  opacity:1 !important;
+}
+
+#page-inventory .inventorySub,
+#page-inventory .inventoryPanel p,
+#page-inventory .inventoryProduct p,
+#page-inventory .inventoryProductMeta span{
+  color:rgba(226,232,240,.76) !important;
+}
+
+#page-inventory .inventoryProductMeta span,
+#page-inventory .inventoryAlert,
+#page-inventory .inventoryEmpty{
+  background-color:rgba(255,255,255,.075);
+}
+
+@media(max-width:760px){
+  #page-inventory .inventoryHero,
+  #page-inventory .inventoryPanel,
+  #page-inventory .inventoryProduct{
+    isolation:isolate;
+  }
+
+  .pc409-ops .pc409-calendar-card{
+    overflow-x:hidden !important;
+  }
+
+  .pc409-ops .pc409-grid,
+  .pc409-ops .pc409-strip-legend{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+
+  .pc409-ops .pc409-grid{
+    grid-template-columns:repeat(7,minmax(0,1fr)) !important;
+    grid-template-rows:34px repeat(6,minmax(82px,auto)) !important;
+  }
+
+  .pc409-ops .pc409-head{
+    min-width:0 !important;
+    height:34px !important;
+    font-size:11px !important;
+    padding:0 2px !important;
+  }
+
+  .pc409-ops .pc409-day{
+    min-width:0 !important;
+    min-height:82px !important;
+    padding:6px 4px !important;
+    overflow:hidden !important;
+  }
+
+  .pc409-ops .pc409-num{
+    margin-bottom:5px !important;
+    font-size:14px !important;
+  }
+
+  .pc409-ops .pc409-event,
+  .pc409-ops .pc409-event.compact,
+  .pc409-ops .pc409-event.tiny{
+    margin-bottom:4px !important;
+    padding:4px 3px !important;
+    border-radius:5px !important;
+    font-size:8px !important;
+    line-height:1.06 !important;
+    max-height:31px !important;
+    overflow:hidden !important;
+    display:-webkit-box !important;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+    word-break:normal;
+    overflow-wrap:anywhere;
+  }
+
+  .pc409-ops .pc409-strip-legend{
+    gap:8px !important;
+    padding:10px 8px !important;
+  }
+}

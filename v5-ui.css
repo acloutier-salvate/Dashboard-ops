@@ -1,0 +1,677 @@
+/* Dashboard OPS V5 visual foundation.
+   Presentation only: no data, integration or calculation selectors are changed. */
+
+:root{
+  --v5-bg:#07090d;
+  --v5-bg-soft:#0d1118;
+  --v5-panel:#111722;
+  --v5-panel-strong:#151d29;
+  --v5-line:rgba(226,232,240,.12);
+  --v5-line-soft:rgba(226,232,240,.075);
+  --v5-text:#f8fafc;
+  --v5-muted:#aab4c3;
+  --v5-red:#df2029;
+  --v5-red-deep:#a50f1b;
+  --v5-green:#36d06b;
+  --v5-amber:#f4b740;
+  --v5-blue:#66a9ff;
+  --v5-shadow:0 18px 46px rgba(0,0,0,.28);
+  --v5-shadow-hover:0 24px 58px rgba(0,0,0,.36),0 0 0 1px rgba(223,32,41,.08);
+  --v5-radius:16px;
+  --v5-speed:.2s;
+}
+
+html,
+body{
+  background:linear-gradient(145deg,#07090d 0%,#0b1017 55%,#16080c 100%) !important;
+  color:var(--v5-text) !important;
+  letter-spacing:0 !important;
+}
+
+body{
+  margin:0;
+}
+
+.app{
+  width:100% !important;
+  max-width:none !important;
+  height:100vh !important;
+  min-height:0 !important;
+  display:grid !important;
+  grid-template-columns:248px minmax(0,1fr) !important;
+  overflow:hidden !important;
+}
+
+.hero{
+  position:relative !important;
+  inset:auto !important;
+  z-index:100;
+  width:248px !important;
+  height:100vh !important;
+  min-height:0 !important;
+  padding:18px 14px max(18px,env(safe-area-inset-bottom)) !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  overscroll-behavior:contain;
+  border:0 !important;
+  border-right:1px solid rgba(223,32,41,.35) !important;
+  border-radius:0 !important;
+  background:linear-gradient(180deg,rgba(10,14,20,.99),rgba(6,8,12,.99)) !important;
+  box-shadow:18px 0 48px rgba(0,0,0,.32) !important;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(226,232,240,.18) transparent;
+}
+
+.hero::-webkit-scrollbar{
+  width:5px;
+}
+
+.hero::-webkit-scrollbar-thumb{
+  border-radius:999px;
+  background:rgba(226,232,240,.18);
+}
+
+.brand{
+  margin:0 0 10px !important;
+  padding:4px 4px 14px;
+  border-bottom:1px solid var(--v5-line-soft);
+}
+
+.logoFull{
+  width:158px !important;
+  height:60px !important;
+  margin:0 !important;
+  border:1px solid rgba(255,255,255,.12) !important;
+  border-radius:14px !important;
+  background:#d71920 !important;
+  box-shadow:0 14px 30px rgba(223,32,41,.22) !important;
+}
+
+.logoFull img{
+  width:100%;
+  height:100%;
+  padding:7px !important;
+  object-fit:contain !important;
+}
+
+.brand p{
+  margin:12px 0 0 !important;
+  color:#c8d0dc !important;
+  font-size:12px !important;
+  line-height:1.35 !important;
+}
+
+.status{
+  margin-top:10px !important;
+  border:1px solid var(--v5-line-soft) !important;
+  border-radius:12px !important;
+  padding:7px 9px !important;
+  background:rgba(255,255,255,.045) !important;
+  color:#d8e0eb !important;
+  box-shadow:none !important;
+  font-size:11px !important;
+}
+
+.menu{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:5px !important;
+  margin:0 !important;
+  padding:0 2px 8px 0 !important;
+  border:0 !important;
+  background:transparent !important;
+  backdrop-filter:none !important;
+}
+
+.menu button{
+  position:relative;
+  width:100% !important;
+  min-height:46px !important;
+  height:auto !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:10px !important;
+  padding:0 12px !important;
+  border:1px solid transparent !important;
+  border-radius:12px !important;
+  background:transparent !important;
+  color:#c7d0dc !important;
+  box-shadow:none !important;
+  font-size:14px !important;
+  font-weight:850 !important;
+  letter-spacing:0 !important;
+  text-align:left !important;
+  transition:transform var(--v5-speed) ease,background var(--v5-speed) ease,border-color var(--v5-speed) ease,color var(--v5-speed) ease,box-shadow var(--v5-speed) ease;
+}
+
+.menu button:hover{
+  transform:translateX(2px) !important;
+  border-color:rgba(226,232,240,.1) !important;
+  background:rgba(255,255,255,.055) !important;
+  color:#fff !important;
+  box-shadow:none !important;
+}
+
+.menu button.active{
+  transform:none !important;
+  border-color:rgba(255,100,108,.35) !important;
+  background:linear-gradient(135deg,rgba(223,32,41,.95),rgba(165,15,27,.88)) !important;
+  color:#fff !important;
+  box-shadow:0 10px 24px rgba(223,32,41,.22),inset 0 1px 0 rgba(255,255,255,.14) !important;
+}
+
+.content{
+  width:100% !important;
+  max-width:none !important;
+  height:100vh !important;
+  min-height:0 !important;
+  padding:30px clamp(18px,3vw,42px) 74px !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(226,232,240,.20) transparent;
+}
+
+.content::-webkit-scrollbar{
+  width:7px;
+}
+
+.content::-webkit-scrollbar-thumb{
+  border-radius:999px;
+  background:rgba(226,232,240,.18);
+}
+
+.page{
+  width:min(100%,1540px);
+  margin:0 auto;
+}
+
+.page h2,
+.inventoryHero h2,
+.toolsHero h2{
+  letter-spacing:0 !important;
+}
+
+.page h2{
+  font-size:clamp(30px,3.2vw,42px) !important;
+  line-height:1.02 !important;
+}
+
+.subtitle{
+  color:var(--v5-muted) !important;
+  line-height:1.5 !important;
+}
+
+.card,
+.panel,
+.checkItem,
+.message,
+.lineChartWrap,
+.execPanel,
+.toolsPanel,
+.inventoryPanel,
+.inventoryProduct,
+.inventoryKpi{
+  border:1px solid var(--v5-line-soft) !important;
+  border-radius:var(--v5-radius) !important;
+  background:linear-gradient(145deg,rgba(20,27,39,.94),rgba(11,15,22,.94)) !important;
+  box-shadow:var(--v5-shadow) !important;
+  backdrop-filter:blur(14px);
+  transition:transform var(--v5-speed) ease,border-color var(--v5-speed) ease,box-shadow var(--v5-speed) ease,background var(--v5-speed) ease !important;
+}
+
+.card:hover,
+.panel:hover,
+.checkItem:hover,
+.execPanel:hover,
+.toolsPanel:hover,
+.inventoryPanel:hover,
+.inventoryProduct:hover,
+.inventoryKpi:hover{
+  transform:translateY(-2px) !important;
+  border-color:rgba(226,232,240,.16) !important;
+  box-shadow:var(--v5-shadow-hover) !important;
+}
+
+.card:after,
+.inventoryKpi:before,
+.toolCard:before{
+  display:none !important;
+}
+
+.card:before{
+  height:1px !important;
+  background:linear-gradient(90deg,transparent,rgba(223,32,41,.8),transparent) !important;
+}
+
+.controls{
+  border:1px solid var(--v5-line-soft) !important;
+  border-radius:var(--v5-radius) !important;
+  padding:12px !important;
+  background:rgba(13,18,26,.84) !important;
+  box-shadow:0 14px 34px rgba(0,0,0,.18) !important;
+}
+
+input,
+select,
+textarea,
+.execControls select,
+.inventoryHeroActions select,
+.inventoryControls input,
+.inventoryControls select,
+.smartInputs input{
+  border-color:rgba(226,232,240,.12) !important;
+  border-radius:12px !important;
+  background:rgba(7,10,15,.78) !important;
+  color:#fff !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:rgba(223,32,41,.58) !important;
+  box-shadow:0 0 0 3px rgba(223,32,41,.13) !important;
+}
+
+.btn,
+.execBtn,
+.inventoryBtn{
+  border:1px solid rgba(226,232,240,.11) !important;
+  border-radius:12px !important;
+  box-shadow:none;
+  letter-spacing:0 !important;
+  transition:transform var(--v5-speed) ease,border-color var(--v5-speed) ease,background var(--v5-speed) ease,box-shadow var(--v5-speed) ease !important;
+}
+
+.btn.red,
+.inventoryBtn.red{
+  border-color:rgba(255,255,255,.1) !important;
+  background:linear-gradient(135deg,var(--v5-red),var(--v5-red-deep)) !important;
+  box-shadow:0 10px 24px rgba(223,32,41,.22) !important;
+}
+
+.btn.blue{
+  background:linear-gradient(135deg,#243246,#141d2a) !important;
+}
+
+.btn:hover,
+.execBtn:hover,
+.inventoryBtn:hover{
+  transform:translateY(-1px) !important;
+  border-color:rgba(226,232,240,.2) !important;
+  box-shadow:0 14px 28px rgba(0,0,0,.22) !important;
+}
+
+table{
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+}
+
+th{
+  background:rgba(223,32,41,.13) !important;
+  color:#e9eef5 !important;
+}
+
+td,
+th{
+  border-color:rgba(226,232,240,.07) !important;
+}
+
+/* Executive dashboard */
+#page-dashboard .execDash{
+  gap:16px !important;
+  border:1px solid var(--v5-line-soft) !important;
+  border-radius:20px !important;
+  padding:clamp(16px,2vw,24px) !important;
+  background:linear-gradient(145deg,rgba(11,16,24,.98),rgba(15,20,29,.98) 58%,rgba(34,10,14,.94)) !important;
+  box-shadow:0 26px 72px rgba(0,0,0,.28) !important;
+}
+
+#page-dashboard .execDashHero{
+  align-items:flex-end !important;
+  gap:16px !important;
+  padding-bottom:16px;
+  border-bottom:1px solid var(--v5-line-soft);
+}
+
+#page-dashboard .execEyebrow,
+.toolsEyebrow,
+.inventoryEyebrow,
+.opsAdminEyebrow{
+  color:#ff6a72 !important;
+  letter-spacing:.08em !important;
+}
+
+#page-dashboard .execSub{
+  color:var(--v5-muted) !important;
+}
+
+#page-dashboard .execControls{
+  gap:8px !important;
+}
+
+#page-dashboard .execBtn,
+#page-dashboard .execScopePill,
+#page-dashboard #dashWeek{
+  min-height:44px !important;
+  border-radius:11px !important;
+}
+
+#page-dashboard .execKpiGrid{
+  gap:12px !important;
+}
+
+#page-dashboard .execKpi{
+  min-height:150px !important;
+  padding:16px !important;
+  border-radius:15px !important;
+  background:linear-gradient(155deg,rgba(22,30,43,.98),rgba(10,14,21,.98)) !important;
+  box-shadow:0 14px 32px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+
+#page-dashboard .execKpi.green{border-top:2px solid rgba(54,208,107,.72) !important}
+#page-dashboard .execKpi.violet{border-top:2px solid rgba(167,139,250,.72) !important}
+#page-dashboard .execKpi.blue{border-top:2px solid rgba(102,169,255,.72) !important}
+#page-dashboard .execKpi.red{border-top:2px solid rgba(255,91,101,.78) !important}
+#page-dashboard .execKpi.amber{border-top:2px solid rgba(244,183,64,.76) !important}
+#page-dashboard .execKpi.teal{border-top:2px solid rgba(45,212,191,.72) !important}
+
+#page-dashboard .execKpi strong{
+  margin-top:14px !important;
+  color:#fff !important;
+  font-size:clamp(27px,2.25vw,37px) !important;
+  line-height:1 !important;
+  letter-spacing:0 !important;
+}
+
+#page-dashboard .execKpiTop label{
+  color:#bcc6d4 !important;
+  letter-spacing:.05em !important;
+}
+
+#page-dashboard .execPanel{
+  overflow:hidden;
+  padding:15px !important;
+}
+
+#page-dashboard .execPanelHead{
+  margin-bottom:8px !important;
+  padding-bottom:10px !important;
+  border-bottom:1px solid var(--v5-line-soft) !important;
+}
+
+#page-dashboard .execPanelHead h3{
+  letter-spacing:0 !important;
+}
+
+/* Auth and admin */
+.hero > .opsAuthBar{
+  border-color:var(--v5-line-soft) !important;
+  border-radius:14px !important;
+  background:rgba(255,255,255,.035) !important;
+  box-shadow:none !important;
+}
+
+.hero > .opsAuthBar strong{
+  border-radius:999px !important;
+  background:rgba(255,255,255,.07) !important;
+}
+
+.hero > .opsAuthBar button{
+  border-radius:10px !important;
+  background:rgba(223,32,41,.12) !important;
+}
+
+.opsAuthOverlay{
+  background:linear-gradient(145deg,rgba(4,7,11,.98),rgba(15,20,29,.99)) !important;
+}
+
+.opsAuthGlow{
+  display:none !important;
+}
+
+.opsAuthCard{
+  border-radius:20px !important;
+  background:linear-gradient(145deg,rgba(19,26,38,.99),rgba(8,11,17,.99)) !important;
+}
+
+.opsAdminRoot{
+  gap:14px !important;
+}
+
+.opsAdminRoot .panel{
+  border-radius:16px !important;
+  background:linear-gradient(145deg,rgba(20,27,39,.96),rgba(10,14,21,.96)) !important;
+}
+
+.opsAdminHeroPanel{
+  border-top:2px solid rgba(223,32,41,.72) !important;
+}
+
+.opsAdminStats div,
+.opsAdminRestaurantRow,
+.opsAdminUser{
+  border-color:var(--v5-line-soft) !important;
+  border-radius:13px !important;
+  background:rgba(255,255,255,.035) !important;
+}
+
+/* Inventory */
+.inventoryHero{
+  border-radius:18px !important;
+  background:linear-gradient(135deg,rgba(18,24,35,.98),rgba(10,14,21,.98) 62%,rgba(42,10,15,.92)) !important;
+  box-shadow:0 20px 54px rgba(0,0,0,.26) !important;
+}
+
+.inventoryHero h2{
+  font-size:clamp(32px,3.6vw,50px) !important;
+}
+
+.inventoryKpi{
+  min-height:108px !important;
+  border-radius:15px !important;
+}
+
+.inventoryProduct{
+  border-radius:14px !important;
+}
+
+/* Tools */
+.toolsHero{
+  border-radius:18px !important;
+  background:linear-gradient(135deg,rgba(18,24,35,.98),rgba(10,14,21,.98) 62%,rgba(42,10,15,.92)) !important;
+  box-shadow:0 20px 54px rgba(0,0,0,.26) !important;
+}
+
+.toolsHero:after{
+  opacity:.35;
+}
+
+.toolCard{
+  border-radius:14px !important;
+  background:linear-gradient(145deg,rgba(20,27,39,.94),rgba(11,15,22,.94)) !important;
+}
+
+/* Calm transitions */
+.page.active{
+  animation:v5PageIn .28s cubic-bezier(.2,.75,.2,1) both !important;
+}
+
+.page.active > *{
+  animation:v5SectionIn .32s cubic-bezier(.2,.75,.2,1) both !important;
+}
+
+@keyframes v5PageIn{
+  from{opacity:.55;transform:translate3d(5px,8px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+
+@keyframes v5SectionIn{
+  from{opacity:.72;transform:translate3d(0,6px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+
+@media(max-width:900px){
+  .app{
+    display:block !important;
+    height:auto !important;
+    min-height:100vh !important;
+    overflow:visible !important;
+  }
+
+  .hero{
+    position:sticky !important;
+    top:0;
+    width:100% !important;
+    height:auto !important;
+    max-height:none !important;
+    padding:10px max(10px,env(safe-area-inset-right)) 8px max(10px,env(safe-area-inset-left)) !important;
+    overflow:visible !important;
+    border-right:0 !important;
+    border-bottom:1px solid rgba(223,32,41,.28) !important;
+    box-shadow:0 14px 32px rgba(0,0,0,.28) !important;
+  }
+
+  .brand{
+    display:flex !important;
+    align-items:center !important;
+    gap:10px !important;
+    margin:0 0 8px !important;
+    padding:0 !important;
+    border-bottom:0;
+  }
+
+  .logoFull{
+    width:126px !important;
+    height:46px !important;
+    flex:0 0 126px !important;
+  }
+
+  .brand p{
+    display:none !important;
+  }
+
+  .status{
+    margin:0 !important;
+    font-size:10.5px !important;
+  }
+
+  .hero > .opsAuthBar{
+    margin:7px 0 !important;
+    padding:7px !important;
+  }
+
+  .hero > .opsAuthBar .opsAuthIdentity{
+    grid-template-columns:minmax(0,1fr) auto !important;
+  }
+
+  .hero > .opsAuthBar button{
+    min-height:32px !important;
+  }
+
+  .menu{
+    flex-direction:row !important;
+    gap:7px !important;
+    width:100% !important;
+    padding:2px 0 5px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    scrollbar-width:none;
+    scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .menu::-webkit-scrollbar{
+    display:none;
+  }
+
+  .menu button{
+    flex:0 0 auto !important;
+    width:auto !important;
+    min-width:108px !important;
+    min-height:42px !important;
+    height:42px !important;
+    justify-content:center !important;
+    padding:0 11px !important;
+    white-space:nowrap !important;
+    scroll-snap-align:start;
+  }
+
+  .content{
+    height:auto !important;
+    min-height:0 !important;
+    padding:16px max(12px,env(safe-area-inset-right)) max(72px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)) !important;
+    overflow:visible !important;
+  }
+
+  #page-dashboard .execDashHero,
+  .toolsHero,
+  .inventoryHero{
+    align-items:stretch !important;
+  }
+}
+
+@media(max-width:760px){
+  .card,
+  .panel,
+  .checkItem,
+  .execPanel,
+  .toolsPanel,
+  .inventoryPanel,
+  .inventoryProduct,
+  .inventoryKpi{
+    border-radius:14px !important;
+  }
+
+  #page-dashboard .execDash{
+    padding:13px !important;
+    border-radius:16px !important;
+  }
+
+  #page-dashboard .execDashHero{
+    display:grid !important;
+  }
+
+  #page-dashboard .execKpi{
+    min-height:132px !important;
+  }
+
+  .inventoryHero,
+  .toolsHero{
+    padding:17px !important;
+    border-radius:16px !important;
+  }
+
+  .opsAdminHeroPanel,
+  .opsAdminStats{
+    grid-template-columns:1fr !important;
+  }
+}
+
+@media(hover:none){
+  .card:hover,
+  .panel:hover,
+  .checkItem:hover,
+  .execPanel:hover,
+  .toolsPanel:hover,
+  .inventoryPanel:hover,
+  .inventoryProduct:hover,
+  .inventoryKpi:hover{
+    transform:none !important;
+    box-shadow:var(--v5-shadow) !important;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  *,
+  *:before,
+  *:after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    scroll-behavior:auto !important;
+    transition-duration:.01ms !important;
+  }
+}

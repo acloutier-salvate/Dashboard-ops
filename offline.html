@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070a0f">
+  <title>Dashboard OPS hors ligne</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 80% 12%,rgba(225,29,46,.22),transparent 34%),linear-gradient(135deg,#070a0f,#111827 60%,#250812);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+    main{width:min(560px,100%);padding:28px;border:1px solid rgba(255,255,255,.13);border-radius:24px;background:rgba(15,23,42,.72);box-shadow:0 28px 90px rgba(0,0,0,.35);backdrop-filter:blur(18px)}
+    img{width:72px;height:72px;object-fit:contain;border-radius:18px;background:#fff;padding:8px;margin-bottom:18px}
+    h1{margin:0 0 10px;font-size:28px;letter-spacing:-.03em}
+    p{margin:0 0 18px;color:#cbd5e1;line-height:1.5}
+    button{border:0;border-radius:14px;background:linear-gradient(135deg,#e11d2e,#b81424);color:#fff;font-weight:900;padding:13px 16px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <main>
+    <img src="salvatore-logo.jpg" alt="Dashboard OPS">
+    <h1>Mode hors ligne</h1>
+    <p>Dashboard OPS peut afficher la dernière version chargée. Les données Google Sheets et CSV peuvent ne pas être à jour tant que la connexion n'est pas revenue.</p>
+    <button type="button" onclick="location.reload()">Réessayer</button>
+  </main>
+</body>
+</html>
