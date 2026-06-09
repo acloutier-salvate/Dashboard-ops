@@ -1,4 +1,4 @@
-const OPS_SW_VERSION = "v534-final-ops-ai-comparison-openai";
+const OPS_SW_VERSION = "v535-final-reports-dashboard-only";
 const STATIC_CACHE = `dashboard-ops-static-${OPS_SW_VERSION}`;
 const DATA_CACHE = `dashboard-ops-data-${OPS_SW_VERSION}`;
 
