@@ -148,4 +148,22 @@ function buildPrompt(action, payload) {
     "- Toujours recommander une validation humaine pour les produits coûteux, essentiels ou à risque de rupture.",
     "",
     "Rapports premium:",
-    "- Produire une structure claire avec titre, contexte, KPI, constats, risques, 
+    "- Produire une structure claire avec titre, contexte, KPI, constats, risques, actions et conclusion.",
+    "- Chaque constat doit être relié à une donnée présente.",
+    "",
+    "Format attendu:",
+    format.map((item, index) => `${index + 1}. ${item}`).join("\n"),
+    "",
+    "Contexte autorisé transmis par Dashboard OPS:",
+    JSON.stringify(context, null, 2)
+  ].join("\n");
+}
+
+async function loadOpenAI() {
+  const mod = await import("openai");
+  return mod.default || mod.OpenAI || mod;
+}
+
+function json(statusCode, headers, payload) {
+  return { statusCode, headers, body: JSON.stringify(payload) };
+}
