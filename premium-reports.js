@@ -229,7 +229,10 @@
     </body></html>`;
   }
 
-  async function addOpenAiReportSummary(report, type){
+async function addOpenAiReportSummary(report, type){
+  report.generatedBy = "dashboard";
+  return report;
+}
     try{
       if(!window.OPS_AI_PROVIDER?.generateFranchiseeReport || !window.OPS_AI_ACCESS?.buildDataSummary) return report;
       const question = type === "network"
