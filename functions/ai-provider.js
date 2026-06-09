@@ -11,18 +11,14 @@ exports.handler = async function(event) {
   }
 
   if (event.httpMethod === "GET") {
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        success: true,
-        message: "AI Provider Online",
-        function: "ai-provider",
-        provider: "openai",
-        version: "v529",
-        openaiKeyDetected: Boolean(process.env.OPENAI_API_KEY)
-      })
-    };
+    return json(200, headers, {
+      success: true,
+      message: "AI Provider Online",
+      function: "ai-provider",
+      provider: "openai",
+      version: "v531",
+      openaiKeyDetected: Boolean(process.env.OPENAI_API_KEY)
+    });
   }
 
   if (event.httpMethod !== "POST") {
@@ -35,7 +31,7 @@ exports.handler = async function(event) {
       return json(500, headers, {
         error: "OPENAI_API_KEY manquante dans Netlify",
         provider: "provider_error",
-        version: "v529"
+        version: "v531"
       });
     }
 
@@ -50,17 +46,23 @@ exports.handler = async function(event) {
 
     const completion = await client.chat.completions.create({
       model,
-      temperature: 0.25,
-      max_tokens: 900,
+      temperature: 0.12,
+      max_tokens: 1100,
       messages: [
         {
           role: "system",
-          content: "Tu es OPS AI, un directeur des opérations virtuel pour Pizza Salvatoré. Réponds en français, de façon professionnelle, concise et actionnable. Utilise seulement les données fournies."
+          content: [
+            "Tu es OPS AI, un directeur des opérations virtuel pour Pizza Salvatoré.",
+            "Tu dois être strictement fidèle aux données JSON fournies.",
+            "Tu n'as jamais le droit d'inventer un CSI, une vente, un délai, une plainte, un inventaire, un stock, une quantité ou une commande.",
+            "Si une donnée manque, écris clairement: donnée non disponible.",
+            "Tu dois toujours respecter le contexte d'écran: Centre de contrôle = réseau complet; Restaurant = restaurant sélectionné; Plaintes = filtres plaintes actifs; Inventaire = restaurant et inventaire actifs.",
+            "Pour l'inventaire et les commandes, tu ne dois jamais remplacer les calculs déterministes du logiciel. Tu peux seulement expliquer, vérifier, prioriser et recommander à partir des valeurs présentes.",
+            "Si les dernières commandes, le dernier inventaire ou les stocks cibles ne sont pas présents, indique que la recommandation doit être validée manuellement.",
+            "Réponds en français, de façon professionnelle, concise, terrain et actionnable."
+          ].join(" ")
         },
-        {
-          role: "user",
-          content: prompt
-        }
+        { role: "user", content: prompt }
       ]
     });
 
@@ -68,7 +70,7 @@ exports.handler = async function(event) {
       provider: "openai",
       action,
       model,
-      version: "v529",
+      version: "v531",
       answer: completion?.choices?.[0]?.message?.content?.trim() || "Aucune réponse générée.",
       usage: {
         promptTokens: completion?.usage?.prompt_tokens || null,
@@ -79,21 +81,22 @@ exports.handler = async function(event) {
         functionCalled: true,
         openaiKeyDetected: true,
         openaiCallExecuted: true,
-        openaiResponseReceived: Boolean(completion?.choices?.[0]?.message?.content)
+        openaiResponseReceived: Boolean(completion?.choices?.[0]?.message?.content),
+        strictOpsMode: true,
+        inventorySafetyMode: true
       }
     });
   } catch (error) {
     return json(500, headers, {
       error: error?.message || "Erreur IA",
       provider: "provider_error",
-      version: "v529"
+      version: "v531"
     });
   }
 };
 
 function buildPrompt(action, payload) {
   const context = payload.context || {};
-  const references = payload.opsReferences || {};
   const format = payload.requiredReportFormat || [
     "Résumé exécutif",
     "Forces",
@@ -111,7 +114,7 @@ function buildPrompt(action, payload) {
     "Question utilisateur:",
     payload.question || "Analyse OPS",
     "",
-    "Réponse locale calculée par Dashboard OPS:",
+    "Réponse locale calculée par Dashboard OPS, à utiliser comme référence si elle existe:",
     payload.localAnswer || "Non disponible",
     "",
     "Références OPS Salvatoré:",
@@ -122,17 +125,33 @@ function buildPrompt(action, payload) {
     "- Food Cost cible: 31,5%",
     "- Labor cible: 27%",
     "",
+    "Règles de vérité des données:",
+    "- Ne jamais inventer une donnée absente.",
+    "- Ne jamais citer un chiffre qui n'apparait pas explicitement dans le contexte JSON.",
+    "- Ne jamais utiliser une valeur globale si une période ou un restaurant est sélectionné.",
+    "- Pour les plaintes, utiliser uniquement context.complaints et context.completeOpsFile.complaints déjà filtrés par Dashboard OPS.",
+    "- Pour le CSI, utiliser seulement context.kpi.totals.csi, context.completeOpsFile.dashboard.networkTotals.csi ou le CSI des restaurants dans context.kpi.restaurants.",
+    "- Si activePage est page-dashboard ou scopeMode vaut network, parler du réseau complet autorisé.",
+    "- Si activePage est page-restaurant ou scopeMode vaut restaurant, parler seulement du selectedRestaurant.",
+    "",
+    "Règles critiques Inventaire & Commande:",
+    "- OpenAI ne doit jamais générer une commande à partir d'une intuition.",
+    "- Utiliser seulement context.completeOpsFile.inventory, context.completeOpsFile.orders.lastSixForSmartOrder, les stocks visibles, les standings, les quantités recommandées et les coûts présents.",
+    "- Si les 6 dernières commandes ne sont pas présentes, écrire: dernières commandes non disponibles.",
+    "- Si le dernier inventaire n'est pas présent, écrire: dernier inventaire non disponible.",
+    "- Si le stock cible ou standing est absent, ne pas recommander de quantité précise.",
+    "- Une quantité à commander doit être présentée comme une vérification ou une priorité seulement si elle existe dans le contexte.",
+    "- Toujours recommander une validation humaine pour les produits coûteux, essentiels ou à risque de rupture.",
+    "",
+    "Rapports premium:",
+    "- Produire une structure claire avec titre, contexte, KPI, constats, risques, actions et conclusion.",
+    "- Chaque constat doit être relié à une donnée présente.",
+    "",
     "Format attendu:",
     format.map((item, index) => `${index + 1}. ${item}`).join("\n"),
     "",
     "Contexte autorisé transmis par Dashboard OPS:",
-    JSON.stringify(context, null, 2),
-    "",
-    "Important:",
-    "- Ne jamais inventer une donnée absente.",
-    "- Respecter les restaurants et permissions présents dans le contexte.",
-    "- Si l'utilisateur demande quoi faire aujourd'hui, retourner les 5 priorités OPS les plus importantes selon les données disponibles.",
-    "- Pour les commandes intelligentes, tenir compte des dernières commandes et inventaires si présents."
+    JSON.stringify(context, null, 2)
   ].join("\n");
 }
 
@@ -142,9 +161,5 @@ async function loadOpenAI() {
 }
 
 function json(statusCode, headers, payload) {
-  return {
-    statusCode,
-    headers,
-    body: JSON.stringify(payload)
-  };
+  return { statusCode, headers, body: JSON.stringify(payload) };
 }
