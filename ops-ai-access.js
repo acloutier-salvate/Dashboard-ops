@@ -186,6 +186,15 @@
     return {
       denied:false,
       needsRestaurant:false,
+      auth:{
+        user:{
+          id:ctx.user?.id || "",
+          email:ctx.user?.email || ""
+        },
+        role:ctx.role,
+        roleLabel:ctx.roleLabel,
+        allowedRestaurants:ctx.role === "super_admin" ? ["Tous"] : ctx.allowedRestaurants
+      },
       scopeRestaurant:selected || "Réseau autorisé",
       activePage,
       week,
