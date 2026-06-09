@@ -16,7 +16,7 @@ exports.handler = async function(event) {
       message: "AI Provider Online",
       function: "ai-provider",
       provider: "openai",
-      version: "v531",
+      version: "v534",
       openaiKeyDetected: Boolean(process.env.OPENAI_API_KEY)
     });
   }
@@ -31,7 +31,7 @@ exports.handler = async function(event) {
       return json(500, headers, {
         error: "OPENAI_API_KEY manquante dans Netlify",
         provider: "provider_error",
-        version: "v531"
+        version: "v534"
       });
     }
 
@@ -98,3 +98,54 @@ exports.handler = async function(event) {
 
 function buildPrompt(action, payload) {
   const context = payload.context || {};
+  const format = payload.requiredReportFormat || [
+    "Résumé exécutif",
+    "Forces",
+    "Risques",
+    "Causes probables",
+    "Actions recommandées",
+    "Niveau de priorité",
+    "Message suggéré au franchisé"
+  ];
+
+  return [
+    "Action demandée:",
+    action,
+    "",
+    "Question utilisateur:",
+    payload.question || "Analyse OPS",
+    "",
+    "Réponse locale calculée par Dashboard OPS, à utiliser comme référence si elle existe:",
+    payload.localAnswer || "Non disponible",
+    "",
+    "Faits verrouillés Dashboard OPS:",
+    JSON.stringify(payload.context?.lockedDashboardFacts || null, null, 2),
+    "",
+    "Références OPS Salvatoré:",
+    "- CSI vert: 88% et plus",
+    "- CSI jaune: 85% à 87,99%",
+    "- CSI rouge: moins de 85%",
+    "- Délai livraison cible réseau: 34 minutes",
+    "- Food Cost cible: 31,5%",
+    "- Labor cible: 27%",
+    "",
+    "Règles de vérité des données:",
+    "- Ne jamais inventer une donnée absente.",
+    "- Ne jamais citer un chiffre qui n'apparait pas explicitement dans le contexte JSON.",
+    "- Ne jamais utiliser une valeur globale si une période ou un restaurant est sélectionné.",
+    "- Pour les plaintes, utiliser uniquement context.complaints et context.completeOpsFile.complaints déjà filtrés par Dashboard OPS.",
+    "- Pour le CSI, utiliser seulement context.kpi.totals.csi, context.completeOpsFile.dashboard.networkTotals.csi ou le CSI des restaurants dans context.kpi.restaurants.",
+    "- Si activePage est page-dashboard ou scopeMode vaut network, parler du réseau complet autorisé.",
+    "- Si activePage est page-restaurant ou scopeMode vaut restaurant, parler seulement du selectedRestaurant.",
+    "",
+    "Règles critiques Inventaire & Commande:",
+    "- OpenAI ne doit jamais générer une commande à partir d'une intuition.",
+    "- Utiliser seulement context.completeOpsFile.inventory, context.completeOpsFile.orders.lastSixForSmartOrder, les stocks visibles, les standings, les quantités recommandées et les coûts présents.",
+    "- Si les 6 dernières commandes ne sont pas présentes, écrire: dernières commandes non disponibles.",
+    "- Si le dernier inventaire n'est pas présent, écrire: dernier inventaire non disponible.",
+    "- Si le stock cible ou standing est absent, ne pas recommander de quantité précise.",
+    "- Une quantité à commander doit être présentée comme une vérification ou une priorité seulement si elle existe dans le contexte.",
+    "- Toujours recommander une validation humaine pour les produits coûteux, essentiels ou à risque de rupture.",
+    "",
+    "Rapports premium:",
+    "- Produire une structure claire avec titre, contexte, KPI, constats, risques, 
