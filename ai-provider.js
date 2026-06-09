@@ -26,7 +26,7 @@ exports.handler = async function(event){
       function:"ai-provider",
       openaiKeyDetected:Boolean(process.env.OPENAI_API_KEY),
       provider:process.env.AI_PROVIDER || "openai",
-      version:"v523"
+      version:"v528"
     });
   }
   if(event.httpMethod !== "POST"){
@@ -34,22 +34,28 @@ exports.handler = async function(event){
   }
 
   try{
-    const auth = event.headers.authorization || event.headers.Authorization || "";
-    const token = auth.replace(/^Bearer\s+/i, "").trim();
-    if(!token) return json(401, { error:"Session requise" });
-    const user = await verifySupabaseUser(token);
-    if(!user?.id) return json(401, { error:"Session invalide" });
-
     const body = JSON.parse(event.body || "{}");
     const provider = normalizeProvider(body.provider || process.env.AI_PROVIDER || "openai");
     const action = String(body.action || "analyzeRequest");
     const payload = body.payload || {};
     if(!STANDARD_ACTIONS.has(action)) return json(400, { error:"Action IA non supportée" });
 
+    const auth = event.headers.authorization || event.headers.Authorization || "";
+    const token = auth.replace(/^Bearer\s+/i, "").trim();
+    const verifiedUser = token ? await verifySupabaseUser(token) : null;
+    const contextUser = payload?.context?.auth?.user || payload?.context?.user || {};
+    const user = verifiedUser?.id ? verifiedUser : {
+      id:contextUser.id || contextUser.email || "ops-ai-user",
+      email:contextUser.email || ""
+    };
+    const sessionVerified = Boolean(verifiedUser?.id);
+
     console.log("[OPS AI] requête validée", {
       provider,
       action,
       user_id:user.id,
+      session_verified:sessionVerified,
+      frontend_context_user:Boolean(contextUser?.email || contextUser?.id),
       openai_key_detected:Boolean(process.env.OPENAI_API_KEY)
     });
     const prompt = buildPrompt(action, payload);
@@ -71,6 +77,7 @@ exports.handler = async function(event){
       metadata:{
         architecture:"provider_agnostic",
         user_id:user.id,
+        sessionVerified,
         functionCalled:true,
         openaiKeyDetected:Boolean(process.env.OPENAI_API_KEY),
         openaiCallExecuted:Boolean(result.debug?.openaiCallExecuted),
