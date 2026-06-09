@@ -1,4 +1,4 @@
-const OPS_SW_VERSION = "v533-final-ops-ai-calendar-inventory";
+const OPS_SW_VERSION = "v534-final-ops-ai-comparison-openai";
 const STATIC_CACHE = `dashboard-ops-static-${OPS_SW_VERSION}`;
 const DATA_CACHE = `dashboard-ops-data-${OPS_SW_VERSION}`;
 
@@ -26,7 +26,7 @@ const STATIC_ASSETS = [
   "src/config/aiConfig.js?v=522",
   "src/services/aiProvider.js?v=532",
   "aiProvider.js?v=532",
-  "ops-ai-access.js?v=532",
+  "ops-ai-access.js?v=534",
   "ops-ai-director.js?v=509",
   "ops-ai-assistant.js?v=522",
   "restaurant-profile-v53.js?v=111",
