@@ -1,100 +1,150 @@
-const STANDARD_ACTIONS = new Set([
-  "analyzeRestaurant",
-  "generateOpsMessage",
-  "analyzeRequest",
-  "generateFoodOrderFromStock",
-  "generateFoodOrderFromHistory",
-  "generateFoodOrderHybrid",
-  "generateFranchiseeReport"
-]);
+exports.handler = async function(event) {
+  const headers = {
+    "Content-Type": "application/json; charset=utf-8",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
+  };
 
-let OpenAIClient = null;
-
-exports.handler = async function(event){
-  console.log("[OPS AI] ai-provider appelée", {
-    method:event.httpMethod,
-    hasOpenAiKey:Boolean(process.env.OPENAI_API_KEY),
-    provider:process.env.AI_PROVIDER || "openai"
-  });
-  if(event.httpMethod === "OPTIONS"){
-    return json(204, {});
-  }
-  if(event.httpMethod === "GET"){
-    return json(200, {
-      success:true,
-      message:"AI Provider Online",
-      function:"ai-provider",
-      openaiKeyDetected:Boolean(process.env.OPENAI_API_KEY),
-      provider:process.env.AI_PROVIDER || "openai",
-      version:"v528"
-    });
-  }
-  if(event.httpMethod !== "POST"){
-    return json(405, { error:"Méthode non autorisée" });
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 204, headers, body: "" };
   }
 
-  try{
-    const body = JSON.parse(event.body || "{}");
-    const provider = normalizeProvider(body.provider || process.env.AI_PROVIDER || "openai");
-    const action = String(body.action || "analyzeRequest");
-    const payload = body.payload || {};
-    if(!STANDARD_ACTIONS.has(action)) return json(400, { error:"Action IA non supportée" });
-
-    const auth = event.headers.authorization || event.headers.Authorization || "";
-    const token = auth.replace(/^Bearer\s+/i, "").trim();
-    const verifiedUser = token ? await verifySupabaseUser(token) : null;
-    const contextUser = payload?.context?.auth?.user || payload?.context?.user || {};
-    const user = verifiedUser?.id ? verifiedUser : {
-      id:contextUser.id || contextUser.email || "ops-ai-user",
-      email:contextUser.email || ""
+  if (event.httpMethod === "GET") {
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: true,
+        message: "AI Provider Online",
+        function: "ai-provider",
+        provider: "openai",
+        version: "v529",
+        openaiKeyDetected: Boolean(process.env.OPENAI_API_KEY)
+      })
     };
-    const sessionVerified = Boolean(verifiedUser?.id);
+  }
 
-    console.log("[OPS AI] requête validée", {
-      provider,
-      action,
-      user_id:user.id,
-      session_verified:sessionVerified,
-      frontend_context_user:Boolean(contextUser?.email || contextUser?.id),
-      openai_key_detected:Boolean(process.env.OPENAI_API_KEY)
-    });
+  if (event.httpMethod !== "POST") {
+    return json(405, headers, { error: "Méthode non autorisée" });
+  }
+
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return json(500, headers, {
+        error: "OPENAI_API_KEY manquante dans Netlify",
+        provider: "provider_error",
+        version: "v529"
+      });
+    }
+
+    const body = JSON.parse(event.body || "{}");
+    const action = body.action || "analyzeRequest";
+    const payload = body.payload || {};
     const prompt = buildPrompt(action, payload);
-    const result = await providerRequest(provider, prompt);
-    console.log("[OPS AI] réponse fournisseur reçue", {
-      provider,
-      action,
-      model:result.model,
-      openai_call_executed:Boolean(result.debug?.openaiCallExecuted),
-      openai_response_received:Boolean(result.debug?.openaiResponseReceived),
-      total_tokens:result.usage?.totalTokens || null
+
+    const OpenAI = await loadOpenAI();
+    const client = new OpenAI({ apiKey });
+    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+
+    const completion = await client.chat.completions.create({
+      model,
+      temperature: 0.25,
+      max_tokens: 900,
+      messages: [
+        {
+          role: "system",
+          content: "Tu es OPS AI, un directeur des opérations virtuel pour Pizza Salvatoré. Réponds en français, de façon professionnelle, concise et actionnable. Utilise seulement les données fournies."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ]
     });
-    return json(200, {
-      provider,
+
+    return json(200, headers, {
+      provider: "openai",
       action,
-      model:result.model,
-      answer:result.answer || payload.localAnswer || "Aucune analyse disponible.",
-      usage:result.usage || null,
-      metadata:{
-        architecture:"provider_agnostic",
-        user_id:user.id,
-        sessionVerified,
-        functionCalled:true,
-        openaiKeyDetected:Boolean(process.env.OPENAI_API_KEY),
-        openaiCallExecuted:Boolean(result.debug?.openaiCallExecuted),
-        openaiResponseReceived:Boolean(result.debug?.openaiResponseReceived)
+      model,
+      version: "v529",
+      answer: completion?.choices?.[0]?.message?.content?.trim() || "Aucune réponse générée.",
+      usage: {
+        promptTokens: completion?.usage?.prompt_tokens || null,
+        outputTokens: completion?.usage?.completion_tokens || null,
+        totalTokens: completion?.usage?.total_tokens || null
+      },
+      metadata: {
+        functionCalled: true,
+        openaiKeyDetected: true,
+        openaiCallExecuted: true,
+        openaiResponseReceived: Boolean(completion?.choices?.[0]?.message?.content)
       }
     });
-  }catch(error){
-    console.error("[OPS AI] erreur ai-provider", error);
-    return json(500, { error:error.message || "Erreur IA" });
+  } catch (error) {
+    return json(500, headers, {
+      error: error?.message || "Erreur IA",
+      provider: "provider_error",
+      version: "v529"
+    });
   }
 };
 
-function normalizeProvider(provider){
-  const clean = String(provider || "openai").toLowerCase().trim();
-  return ["openai", "gemini", "claude"].includes(clean) ? clean : "openai";
+function buildPrompt(action, payload) {
+  const context = payload.context || {};
+  const references = payload.opsReferences || {};
+  const format = payload.requiredReportFormat || [
+    "Résumé exécutif",
+    "Forces",
+    "Risques",
+    "Causes probables",
+    "Actions recommandées",
+    "Niveau de priorité",
+    "Message suggéré au franchisé"
+  ];
+
+  return [
+    "Action demandée:",
+    action,
+    "",
+    "Question utilisateur:",
+    payload.question || "Analyse OPS",
+    "",
+    "Réponse locale calculée par Dashboard OPS:",
+    payload.localAnswer || "Non disponible",
+    "",
+    "Références OPS Salvatoré:",
+    "- CSI vert: 88% et plus",
+    "- CSI jaune: 85% à 87,99%",
+    "- CSI rouge: moins de 85%",
+    "- Délai livraison cible réseau: 34 minutes",
+    "- Food Cost cible: 31,5%",
+    "- Labor cible: 27%",
+    "",
+    "Format attendu:",
+    format.map((item, index) => `${index + 1}. ${item}`).join("\n"),
+    "",
+    "Contexte autorisé transmis par Dashboard OPS:",
+    JSON.stringify(context, null, 2),
+    "",
+    "Important:",
+    "- Ne jamais inventer une donnée absente.",
+    "- Respecter les restaurants et permissions présents dans le contexte.",
+    "- Si l'utilisateur demande quoi faire aujourd'hui, retourner les 5 priorités OPS les plus importantes selon les données disponibles.",
+    "- Pour les commandes intelligentes, tenir compte des dernières commandes et inventaires si présents."
+  ].join("\n");
 }
 
-function buildPrompt(action, payload){
-  const references = payload.opsReferences || {};
-  const format = Array.isArray(payload.requiredReportFormat) ? payload.requiredReportFormat : [];
+async function loadOpenAI() {
+  const mod = await import("openai");
+  return mod.default || mod.OpenAI || mod;
+}
+
+function json(statusCode, headers, payload) {
+  return {
+    statusCode,
+    headers,
+    body: JSON.stringify(payload)
+  };
+}
