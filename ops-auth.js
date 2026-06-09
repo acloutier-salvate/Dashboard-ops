@@ -717,6 +717,7 @@
       kpiCsvUrl:state.sheetSources?.kpi_csv_url || "",
       complaintsCsvUrl:state.sheetSources?.complaints_csv_url || ""
     };
+    window.OPS_AUTH_ACCESS_TOKEN = state.session?.access_token || "";
     if(typeof window.applyOpsAccessContext === "function"){
       window.applyOpsAccessContext(window.OPS_AUTH_CONTEXT);
     }
@@ -1159,10 +1160,26 @@
     else lockToLogin();
   }
 
+  async function getAccessToken(){
+    try{
+      const client = createClient();
+      if(client?.auth?.getSession){
+        const { data } = await client.auth.getSession();
+        if(data?.session?.access_token){
+          state.session = data.session;
+          window.OPS_AUTH_ACCESS_TOKEN = data.session.access_token;
+          return data.session.access_token;
+        }
+      }
+    }catch(e){}
+    return state.session?.access_token || window.OPS_AUTH_ACCESS_TOKEN || "";
+  }
+
   window.opsAuth = {
     signOut,
     refreshAdmin:renderAdminPanel,
-    getContext:() => Object.assign({}, window.OPS_AUTH_CONTEXT || {})
+    getContext:() => Object.assign({}, window.OPS_AUTH_CONTEXT || {}),
+    getAccessToken
   };
   window.setOpsAdminSection = setOpsAdminSection;
 

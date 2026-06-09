@@ -29,6 +29,15 @@
 
   async function authToken(){
     try{
+      if(typeof window.opsAuth?.getAccessToken === "function"){
+        const activeToken = await window.opsAuth.getAccessToken();
+        if(activeToken) return activeToken;
+      }
+      if(window.OPS_AUTH_ACCESS_TOKEN) return window.OPS_AUTH_ACCESS_TOKEN;
+      if(window.OPS_SUPABASE_CLIENT?.auth?.getSession){
+        const { data } = await window.OPS_SUPABASE_CLIENT.auth.getSession();
+        if(data?.session?.access_token) return data.session.access_token;
+      }
       if(!window.supabase || !window.OPS_AUTH_CONFIG?.supabaseUrl || !window.OPS_AUTH_CONFIG?.supabaseAnonKey) return "";
       const client = window.supabase.createClient(window.OPS_AUTH_CONFIG.supabaseUrl, window.OPS_AUTH_CONFIG.supabaseAnonKey);
       const { data } = await client.auth.getSession();

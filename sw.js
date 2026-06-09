@@ -1,4 +1,4 @@
-const OPS_SW_VERSION = "v522-ai-provider-root-loader";
+const OPS_SW_VERSION = "v526-ai-session-token-fix";
 const STATIC_CACHE = `dashboard-ops-static-${OPS_SW_VERSION}`;
 const DATA_CACHE = `dashboard-ops-data-${OPS_SW_VERSION}`;
 
@@ -24,15 +24,15 @@ const STATIC_ASSETS = [
   "premium-reports.js?v=67",
   "ops-intelligence.js?v=509",
   "src/config/aiConfig.js?v=522",
-  "src/services/aiProvider.js?v=522",
-  "aiProvider.js?v=522",
+  "src/services/aiProvider.js?v=526",
+  "aiProvider.js?v=526",
   "ops-ai-access.js?v=522",
   "ops-ai-director.js?v=509",
   "ops-ai-assistant.js?v=522",
   "restaurant-profile-v53.js?v=111",
   "ops-enterprise-surfaces.js?v=109",
   "admin-center-v513.js?v=516",
-  "ops-auth.js?v=515",
+  "ops-auth.js?v=526",
   "inventory-utils.js?v=98",
   "inventory-calculations.js?v=511",
   "inventory-orders.js?v=511",
