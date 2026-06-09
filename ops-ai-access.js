@@ -1,7 +1,7 @@
 (function(){
   "use strict";
 
-  const VERSION = "v533";
+  const VERSION = "v534";
   const ROLE_LABELS = {
     super_admin:"Super Admin",
     co:"Conseiller Opérations",
@@ -149,30 +149,65 @@
     return Number.isNaN(d.getTime()) ? null : d;
   }
 
-  function parseQuestionWeekRange(question){
-    const text = String(question || "").toLowerCase();
+  function monthNumber(label){
     const months = {
       janvier:1, fevrier:2, février:2, mars:3, avril:4, mai:5, juin:6,
       juillet:7, aout:8, août:8, septembre:9, octobre:10, novembre:11, decembre:12, décembre:12
     };
-    const iso = text.match(/(\d{4}-\d{2}-\d{2}).*?(\d{4}-\d{2}-\d{2})/);
-    if(iso){
-      return { start:iso[1], end:iso[2], label:`${iso[1]} au ${iso[2]}` };
+    return months[String(label || "").toLowerCase()] || null;
+  }
+
+  function isoDate(year, month, day){
+    return `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+  }
+
+  function previousMonth(year, month){
+    return month <= 1 ? { year:year - 1, month:12 } : { year, month:month - 1 };
+  }
+
+  function parseQuestionWeekRanges(question){
+    const text = String(question || "").toLowerCase();
+    const ranges = [];
+    const seen = new Set();
+    const addRange = (start, end) => {
+      if(!start || !end) return;
+      const key = `${start}|${end}`;
+      if(seen.has(key)) return;
+      seen.add(key);
+      ranges.push({ start, end, label:`${start} au ${end}` });
+    };
+    const isoRe = /(\d{4}-\d{2}-\d{2}).{0,40}?(\d{4}-\d{2}-\d{2})/g;
+    let isoMatch;
+    while((isoMatch = isoRe.exec(text))){
+      addRange(isoMatch[1], isoMatch[2]);
     }
-    const fr = text.match(/(\d{1,2})\s+([a-zéûôîàèùç]+)\s+(?:au|a|à|-)\s+(\d{1,2})\s+([a-zéûôîàèùç]+)?\s*(\d{4})/i);
-    if(fr){
+    const defaultDate = text.match(/(?:janvier|fevrier|février|mars|avril|mai|juin|juillet|aout|août|septembre|octobre|novembre|decembre|décembre)\s+(\d{4})/i);
+    const defaultMonthMatch = text.match(/(janvier|fevrier|février|mars|avril|mai|juin|juillet|aout|août|septembre|octobre|novembre|decembre|décembre)\s+\d{4}/i);
+    const defaultMonth = monthNumber(defaultMonthMatch?.[1]);
+    const defaultYear = defaultDate ? Number(defaultDate[1]) : null;
+    const frRe = /(\d{1,2})(?:\s+(janvier|fevrier|février|mars|avril|mai|juin|juillet|aout|août|septembre|octobre|novembre|decembre|décembre))?\s*(?:au|a|à|-)\s*(\d{1,2})(?:\s+(janvier|fevrier|février|mars|avril|mai|juin|juillet|aout|août|septembre|octobre|novembre|decembre|décembre))?(?:\s+(\d{4}))?/gi;
+    let fr;
+    while((fr = frRe.exec(text))){
       const startDay = Number(fr[1]);
-      const startMonth = months[fr[2]] || null;
+      const explicitStartMonth = monthNumber(fr[2]);
       const endDay = Number(fr[3]);
-      const endMonth = months[fr[4]] || startMonth;
-      const year = Number(fr[5]);
-      if(startMonth && endMonth && year){
-        const start = `${year}-${String(startMonth).padStart(2,"0")}-${String(startDay).padStart(2,"0")}`;
-        const end = `${year}-${String(endMonth).padStart(2,"0")}-${String(endDay).padStart(2,"0")}`;
-        return { start, end, label:`${start} au ${end}` };
+      const endMonth = monthNumber(fr[4]) || explicitStartMonth || defaultMonth;
+      const endYear = Number(fr[5]) || defaultYear;
+      if(!startDay || !endDay || !endMonth || !endYear) continue;
+      let startMonth = explicitStartMonth || endMonth;
+      let startYear = endYear;
+      if(!explicitStartMonth && startDay > endDay){
+        const prev = previousMonth(endYear, endMonth);
+        startMonth = prev.month;
+        startYear = prev.year;
       }
+      addRange(isoDate(startYear, startMonth, startDay), isoDate(endYear, endMonth, endDay));
     }
-    return null;
+    return ranges;
+  }
+
+  function parseQuestionWeekRange(question){
+    return parseQuestionWeekRanges(question)[0] || null;
   }
 
   function rowMatchesQuestionWeek(row, range){
@@ -329,6 +364,88 @@
       `- Dédommagement plaintes : ${money(totals.complaintAmount)}`,
       "",
       "Ces chiffres proviennent des données actuellement chargées dans le logiciel, sans estimation OpenAI."
+    ].join("\n");
+  }
+
+  function metricsForRestaurantRange(restaurant, range){
+    const rows = visibleRows().filter((row) => norm(row.restaurant) === norm(restaurant) && rowMatchesQuestionWeek(row, range));
+    const complaints = visibleComplaints().filter((row) => norm(row.restaurant) === norm(restaurant) && rowMatchesQuestionWeek(row, range));
+    return {
+      range,
+      rows,
+      complaints,
+      sales:round(sum(rows, "sales"), 0),
+      csi:round(avg(rows, "csi"), 1),
+      delay:round(avg(rows, "delay"), 1),
+      complaintsKpi:round(sum(rows, "complaints"), 0),
+      growth:round(avg(rows, "growth"), 1),
+      foodCost:round(avg(rows, "foodCost"), 1),
+      laborCost:round(avg(rows, "laborCost"), 1),
+      complaintRows:complaints.length,
+      complaintAmount:round(complaints.reduce((total, row) => total + (num(row?.amount) || 0), 0), 0)
+    };
+  }
+
+  function deltaText(current, previous, formatter, suffix){
+    const a = num(current);
+    const b = num(previous);
+    if(a == null || b == null) return "—";
+    const diff = round(a - b, 1);
+    const sign = diff > 0 ? "+" : "";
+    if(formatter === "money") return `${sign}${money(diff)}`;
+    if(formatter === "pct") return `${sign}${diff.toLocaleString("fr-CA", { maximumFractionDigits:1 })} pt`;
+    return `${sign}${diff.toLocaleString("fr-CA", { maximumFractionDigits:1 })}${suffix || ""}`;
+  }
+
+  function exactComparisonAnswer(question){
+    const key = norm(question);
+    const asksComparison = key.includes("difference") || key.includes("comparer") || key.includes("comparaison") || key.includes("vs") || key.includes("versus") || key.includes("ecart");
+    if(!asksComparison) return null;
+    const restaurant = detectRestaurant(question) || activeRestaurant();
+    const ranges = parseQuestionWeekRanges(question);
+    if(!restaurant || ranges.length < 2) return null;
+    const ctx = currentContext();
+    if(!canAccessRestaurant(restaurant, ctx)){
+      return `Je ne peux pas analyser ${restaurant}, car ce restaurant n'est pas dans tes accès.`;
+    }
+    const current = metricsForRestaurantRange(restaurant, ranges[0]);
+    const previous = metricsForRestaurantRange(restaurant, ranges[1]);
+    if(!current.rows.length || !previous.rows.length){
+      const missing = [];
+      if(!current.rows.length) missing.push(ranges[0].label);
+      if(!previous.rows.length) missing.push(ranges[1].label);
+      return `Je ne trouve pas les lignes KPI chargées pour ${restaurant} pour : ${missing.join(", ")}. Vérifie que le CSV KPI contient ces semaines et que la synchronisation est terminée.`;
+    }
+    const salesDiff = (num(current.sales) ?? 0) - (num(previous.sales) ?? 0);
+    const salesPct = num(previous.sales) ? round((salesDiff / num(previous.sales)) * 100, 1) : null;
+    const complaintAmountDiff = (num(current.complaintAmount) ?? 0) - (num(previous.complaintAmount) ?? 0);
+    const complaintRowsDiff = current.complaintRows - previous.complaintRows;
+    const csiDiff = (num(current.csi) != null && num(previous.csi) != null) ? round(num(current.csi) - num(previous.csi), 1) : null;
+    const delayDiff = (num(current.delay) != null && num(previous.delay) != null) ? round(num(current.delay) - num(previous.delay), 1) : null;
+    const reading = [];
+    if(csiDiff != null) reading.push(csiDiff >= 0 ? `CSI en hausse de ${csiDiff} point(s).` : `CSI en baisse de ${Math.abs(csiDiff)} point(s).`);
+    if(delayDiff != null) reading.push(delayDiff <= 0 ? `Délai amélioré de ${Math.abs(delayDiff)} min.` : `Délai plus élevé de ${delayDiff} min.`);
+    if(salesPct != null) reading.push(salesPct >= 0 ? `Ventes en hausse de ${salesPct} %.` : `Ventes en baisse de ${Math.abs(salesPct)} %.`);
+    reading.push(complaintRowsDiff >= 0 ? `Plaintes CSV en hausse de ${complaintRowsDiff}.` : `Plaintes CSV en baisse de ${Math.abs(complaintRowsDiff)}.`);
+    return [
+      `Comparaison exacte Dashboard OPS pour ${restaurant} :`,
+      "",
+      `Période récente : ${current.range.label}`,
+      `Période comparée : ${previous.range.label}`,
+      "",
+      `- Ventes : ${money(current.sales)} vs ${money(previous.sales)} | Écart : ${deltaText(current.sales, previous.sales, "money")}${salesPct == null ? "" : ` (${salesPct > 0 ? "+" : ""}${salesPct} %)`}`,
+      `- CSI : ${pct(current.csi)} vs ${pct(previous.csi)} | Écart : ${deltaText(current.csi, previous.csi, "pct")}`,
+      `- Délai livraison : ${current.delay == null ? "—" : `${current.delay} min`} vs ${previous.delay == null ? "—" : `${previous.delay} min`} | Écart : ${deltaText(current.delay, previous.delay, "number", " min")}`,
+      `- Augmentation ventes : ${pct(current.growth)} vs ${pct(previous.growth)} | Écart : ${deltaText(current.growth, previous.growth, "pct")}`,
+      `- Food Cost : ${pct(current.foodCost)} vs ${pct(previous.foodCost)} | Écart : ${deltaText(current.foodCost, previous.foodCost, "pct")}`,
+      `- Labor Cost : ${pct(current.laborCost)} vs ${pct(previous.laborCost)} | Écart : ${deltaText(current.laborCost, previous.laborCost, "pct")}`,
+      `- Plaintes KPI : ${current.complaintsKpi ?? "—"} vs ${previous.complaintsKpi ?? "—"} | Écart : ${deltaText(current.complaintsKpi, previous.complaintsKpi, "number")}`,
+      `- Plaintes CSV visibles : ${current.complaintRows} vs ${previous.complaintRows} | Écart : ${complaintRowsDiff > 0 ? "+" : ""}${complaintRowsDiff}`,
+      `- Dédommagement plaintes : ${money(current.complaintAmount)} vs ${money(previous.complaintAmount)} | Écart : ${complaintAmountDiff > 0 ? "+" : ""}${money(complaintAmountDiff)}`,
+      "",
+      `Lecture OPS : ${reading.join(" ")}`,
+      "",
+      "Ces chiffres proviennent des données actuellement chargées dans Dashboard OPS, sans estimation."
     ].join("\n");
   }
 
@@ -709,7 +826,7 @@
     const clean = provider || "fallback";
     window.OPS_AI_LAST_SOURCE = {
       provider:clean,
-      label:clean === "openai" ? "Source : OpenAI" : clean === "provider_error" ? "Source : Erreur provider" : "Source : Fallback",
+      label:clean === "openai" ? "Source : OpenAI" : clean === "dashboard" ? "Source : Dashboard OPS" : clean === "provider_error" ? "Source : Erreur provider" : "Source : Erreur IA",
       metadata:metadata || {},
       at:new Date().toISOString()
     };
@@ -739,17 +856,19 @@
 
   async function answerWithPermissions(question, localAnswer){
     const startedAt = Date.now();
-    const exactAnswer = exactOperationalResultAnswer(question);
-    if(exactAnswer){
-      setLastSource("dashboard", { reason:"exact_operational_result", version:VERSION });
+    const exactComparison = exactComparisonAnswer(question);
+    const exactAnswer = exactComparison || exactOperationalResultAnswer(question);
+    const shouldSendExactToOpenAI = exactAnswer && !String(exactAnswer).startsWith("Je ne peux pas") && !String(exactAnswer).startsWith("Je ne trouve pas");
+    if(exactAnswer && !shouldSendExactToOpenAI){
+      setLastSource("dashboard", { reason:exactComparison ? "exact_comparison_guard" : "exact_operational_guard", version:VERSION });
       await recordUsage({
         startedAt,
         restaurant:detectRestaurant(question) || activeRestaurant() || null,
-        analysisType:"exact_result",
+        analysisType:exactComparison ? "exact_comparison_guard" : "exact_result_guard",
         provider:"dashboard",
         approxTokens:approximateTokens({ question, exactAnswer }),
         success:true,
-        metadata:{ deterministic:true, version:VERSION }
+        metadata:{ deterministic:true, guard:true, version:VERSION }
       });
       return exactAnswer;
     }
@@ -781,18 +900,27 @@
       });
       return text;
     }
-    const approxTokens = approximateTokens({ question, summary, localAnswer });
+    const providerLocalAnswer = shouldSendExactToOpenAI ? exactAnswer : localAnswer;
+    if(shouldSendExactToOpenAI){
+      summary.lockedDashboardFacts = {
+        source:"Dashboard OPS exact calculation",
+        instruction:"OpenAI doit répondre à partir de ces chiffres exacts sans les modifier. Ne pas inventer de donnée supplémentaire.",
+        answer:exactAnswer
+      };
+      summary.strictLocalAnswerRequired = true;
+    }
+    const approxTokens = approximateTokens({ question, summary, localAnswer:providerLocalAnswer });
     try{
-      const result = await callAiProvider(question, summary, localAnswer);
+      const result = await callAiProvider(question, summary, providerLocalAnswer);
       setLastSource(result.provider, result.metadata);
       await recordUsage({
         startedAt,
         restaurant:summary.scopeRestaurant,
-        analysisType:classifyQuestion(question),
+        analysisType:shouldSendExactToOpenAI ? (exactComparison ? "exact_comparison_openai" : "exact_result_openai") : classifyQuestion(question),
         provider:result.provider,
         approxTokens:result.usage?.totalTokens || approxTokens,
         success:true,
-        metadata:{ provider_architecture:true, version:VERSION }
+        metadata:{ provider_architecture:true, exactFacts:Boolean(shouldSendExactToOpenAI), version:VERSION }
       });
       return result.text;
     }catch(error){
@@ -800,13 +928,13 @@
         startedAt,
         restaurant:summary.scopeRestaurant,
         analysisType:classifyQuestion(question),
-        provider:"local",
+        provider:"provider_error",
         approxTokens,
-        success:true,
-        metadata:{ provider_error:String(error?.message || error), fallback:true, version:VERSION }
+        success:false,
+        metadata:{ provider_error:String(error?.message || error), version:VERSION }
       });
-      setLastSource("fallback", { provider_error:String(error?.message || error), fallback:true, version:VERSION });
-      return `OpenAI n'a pas répondu. Source : Fallback. Raison : ${String(error?.message || error)}`;
+      setLastSource("provider_error", { provider_error:String(error?.message || error), version:VERSION });
+      return `OpenAI n'a pas répondu. Erreur réelle : ${String(error?.message || error)}`;
     }
   }
 
