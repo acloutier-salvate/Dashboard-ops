@@ -1,0 +1,2 @@
+node_check: OK
+logo_asset: OK

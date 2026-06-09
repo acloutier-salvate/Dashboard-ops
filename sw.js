@@ -1,4 +1,4 @@
-const OPS_SW_VERSION = "v527-ai-context-auth-fix";
+const OPS_SW_VERSION = "v533-final-ops-ai-calendar-inventory";
 const STATIC_CACHE = `dashboard-ops-static-${OPS_SW_VERSION}`;
 const DATA_CACHE = `dashboard-ops-data-${OPS_SW_VERSION}`;
 
@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
   "index.html",
   "offline.html",
   "manifest.json?v=73",
-  "styles.css?v=516",
+  "styles.css?v=532",
   "v5-ui.css?v=100",
   "v5-1-ui.css?v=101",
   "v5-2-ui.css?v=108",
@@ -21,12 +21,12 @@ const STATIC_ASSETS = [
   "complaints-isolated-v31.js?v=99",
   "complaints-dashboard-v112.js?v=509",
   "executive-dashboard.js?v=76",
-  "premium-reports.js?v=67",
+  "premium-reports.js?v=532",
   "ops-intelligence.js?v=509",
   "src/config/aiConfig.js?v=522",
-  "src/services/aiProvider.js?v=526",
-  "aiProvider.js?v=526",
-  "ops-ai-access.js?v=527",
+  "src/services/aiProvider.js?v=532",
+  "aiProvider.js?v=532",
+  "ops-ai-access.js?v=532",
   "ops-ai-director.js?v=509",
   "ops-ai-assistant.js?v=522",
   "restaurant-profile-v53.js?v=111",
@@ -34,12 +34,12 @@ const STATIC_ASSETS = [
   "admin-center-v513.js?v=516",
   "ops-auth.js?v=526",
   "inventory-utils.js?v=98",
-  "inventory-calculations.js?v=511",
+  "inventory-calculations.js?v=532",
   "inventory-orders.js?v=511",
   "inventory-imports.js?v=98",
   "inventory-supabase.js?v=98",
-  "inventory-render.js?v=512",
-  "inventory-command.js?v=512",
+  "inventory-render.js?v=532",
+  "inventory-command.js?v=532",
   "inventory-data.json?v=86",
   "pwa.js?v=84",
   "ops-readability-v510.js?v=510",

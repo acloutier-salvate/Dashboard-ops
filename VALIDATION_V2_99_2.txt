@@ -1,0 +1,4 @@
+Node OK: True
+Allowed restaurants count: 17
+Contains all-tabs function: True
+No syntax stderr: OK
