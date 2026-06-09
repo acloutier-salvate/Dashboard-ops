@@ -19,7 +19,7 @@
 <link rel="apple-touch-startup-image" href="icons/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
 <link rel="apple-touch-startup-image" href="icons/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link rel="stylesheet" href="styles.css?v=516">
+<link rel="stylesheet" href="styles.css?v=532">
 <link rel="stylesheet" href="v5-ui.css?v=100">
 <link rel="stylesheet" href="v5-1-ui.css?v=101">
 <link rel="stylesheet" href="v5-2-ui.css?v=108">
@@ -616,6 +616,8 @@ window.OPS_AUTH_CONFIG = {
 (function(){
   const SEED_EVENTS = [{"title": "Menu 10$", "category": "promo", "start": "2025-05-12", "end": "2025-05-18", "description": "Menu 10$."}, {"title": "30% de rabais Wow30", "category": "promo", "start": "2025-10-10", "end": "2025-10-15", "description": "Code Wow30."}, {"title": "Extra fromage en grains gratuit", "category": "promo", "start": "2025-11-03", "end": "2025-11-09", "description": "Extra fromage en grains gratuit."}, {"title": "Black Friday Grandes pizzas 14.99$", "category": "promo", "start": "2025-11-24", "end": "2025-11-28", "description": "Black Friday."}, {"title": "10$ rabais pizzas moyennes", "category": "promo", "start": "2026-04-01", "end": "2026-04-30", "description": "Rabais pizzas moyennes."}, {"title": "15% Canadiens — jours de match seulement", "category": "ops", "start": "2026-04-18", "end": "2026-04-18", "description": "Seulement soirs de match."}, {"title": "Pizza La Double Étoilée", "category": "promo", "start": "2026-05-12", "end": "2026-05-12", "description": "Lancement Double Étoilée."}, {"title": "Pizzas 12'' à 12$", "category": "promo", "start": "2026-05-17", "end": "2026-05-21", "description": "Pizzas 12 pouces à 12$."}, {"title": "Promotion acquisition fidélité", "category": "promo", "start": "2026-06-01", "end": "2026-06-30", "description": "Petite poutine gratuite."}, {"title": "Produits locaux Saint-Jean", "category": "promo", "start": "2026-06-02", "end": "2026-06-26", "description": "Produits locaux."}, {"title": "Campagne déménagement", "category": "promo", "start": "2026-06-19", "end": "2026-07-05", "description": "Campagne déménagement."}, {"title": "SMS Double Étoilée", "category": "sms", "start": "2026-05-12", "end": "2026-05-12", "description": "SMS marketing."}, {"title": "SMS Double Étoilée", "category": "sms", "start": "2026-05-13", "end": "2026-05-13", "description": "SMS marketing."}, {"title": "SMS Double Étoilée", "category": "sms", "start": "2026-05-14", "end": "2026-05-14", "description": "SMS marketing."}, {"title": "SMS Pizzas 12'' 12$", "category": "sms", "start": "2026-05-18", "end": "2026-05-18", "description": "SMS marketing."}, {"title": "SMS Pizzas 12'' 12$", "category": "sms", "start": "2026-05-19", "end": "2026-05-19", "description": "SMS marketing."}, {"title": "SMS Pizzas 12'' 12$", "category": "sms", "start": "2026-05-20", "end": "2026-05-20", "description": "SMS marketing."}, {"title": "Lundi de Pâques", "category": "ferie", "start": "2026-04-06", "end": "2026-04-06", "description": "Férié Québec."}, {"title": "Fête nationale du Québec", "category": "ferie", "start": "2026-06-24", "end": "2026-06-24", "description": "Férié Québec."}, {"title": "Fête du Canada", "category": "ferie", "start": "2026-07-01", "end": "2026-07-01", "description": "Férié."}, {"title": "Noël", "category": "ferie", "start": "2026-12-25", "end": "2026-12-25", "description": "Férié."}];
   const STORAGE_KEY = "pc409_manual_events";
+  const NETWORK_STORAGE_KEY = "pc409_network_events";
+  const CALENDAR_TABLE = "ops_calendar_events";
   const FEATURED_EVENTS = [
     {
       title: "PROMO HOCKEY CANADIENS",
@@ -656,9 +658,100 @@ window.OPS_AUTH_CONFIG = {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(events || []));
   }
 
+  function getNetworkEvents(){
+    try { return JSON.parse(localStorage.getItem(NETWORK_STORAGE_KEY) || "[]"); }
+    catch(e){ return []; }
+  }
+
+  function saveNetworkEvents(events){
+    localStorage.setItem(NETWORK_STORAGE_KEY, JSON.stringify(events || []));
+  }
+
+  function eventKey(event){
+    return `${String(event.title || "").trim().toLowerCase()}|${event.category || "promo"}|${event.start || ""}|${event.end || event.start || ""}`;
+  }
+
+  function calendarClient(){
+    return window.OPS_SUPABASE_CLIENT || null;
+  }
+
+  function canPublishCalendarNetwork(){
+    return window.OPS_AUTH_ROLE === "super_admin";
+  }
+
+  function normalizeNetworkEvent(row){
+    const data = row?.event_data || row || {};
+    return {
+      id:row?.id || data.id || "",
+      title:data.title || row?.title || "Événement",
+      category:data.category || row?.category || "promo",
+      start:data.start || row?.start_date || row?.start || "",
+      end:data.end || row?.end_date || row?.end || data.start || row?.start_date || "",
+      description:data.description || row?.description || "",
+      time:data.time || row?.event_time || "",
+      pdf:data.pdf || row?.pdf_name || "",
+      restaurants:data.restaurants || row?.restaurants || [],
+      source:"supabase"
+    };
+  }
+
+  async function loadNetworkCalendarEvents(){
+    const client = calendarClient();
+    if(!client) return;
+    try{
+      const { data, error } = await client
+        .from(CALENDAR_TABLE)
+        .select("*")
+        .eq("active", true)
+        .order("start_date", { ascending:true });
+      if(error) throw error;
+      const events = (data || []).map(normalizeNetworkEvent).filter(e => e.title && e.start);
+      saveNetworkEvents(events);
+      renderCalendar();
+    }catch(error){
+      console.warn("Calendrier réseau Supabase indisponible", error?.message || error);
+    }
+  }
+
+  async function publishCalendarEvents(events){
+    if(!canPublishCalendarNetwork()) return;
+    const client = calendarClient();
+    if(!client || !Array.isArray(events) || !events.length) return;
+    try{
+      const payload = events.map(event => ({
+        event_key:eventKey(event),
+        title:event.title || "Événement",
+        category:event.category || "promo",
+        start_date:event.start || null,
+        end_date:event.end || event.start || null,
+        description:event.description || "",
+        pdf_name:event.pdf || "",
+        restaurants:Array.isArray(event.restaurants) ? event.restaurants : [],
+        event_data:event,
+        active:true,
+        updated_at:new Date().toISOString()
+      }));
+      const { error } = await client
+        .from(CALENDAR_TABLE)
+        .upsert(payload, { onConflict:"event_key" });
+      if(error) throw error;
+      await loadNetworkCalendarEvents();
+    }catch(error){
+      console.warn("Publication calendrier réseau bloquée", error?.message || error);
+    }
+  }
+
   function allEvents(){
     const legacyEvents = SEED_EVENTS.filter(e => !String(e.start || "").startsWith("2026-04"));
-    return [...FEATURED_EVENTS, ...legacyEvents, ...getManualEvents()].map(e => ({
+    const seen = new Set();
+    return [...FEATURED_EVENTS, ...legacyEvents, ...getNetworkEvents(), ...getManualEvents()]
+      .filter(e => {
+        const key = eventKey(e);
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map(e => ({
       ...e,
       title: e.title || "Événement",
       category: e.category || "promo",
@@ -1016,9 +1109,11 @@ window.OPS_AUTH_CONFIG = {
       return;
     }
 
+    const event = {title, category, start, end, description, restaurants:["Tous les restaurants"]};
     const manual = getManualEvents();
-    manual.push({title, category, start, end, description});
+    manual.push(event);
     saveManualEvents(manual);
+    publishCalendarEvents([event]);
 
     closeManualModal();
     renderCalendar();
@@ -1401,6 +1496,7 @@ window.OPS_AUTH_CONFIG = {
     });
 
     saveManualEvents(manual);
+    publishCalendarEvents(added);
 
     closeReview();
     renderCalendar();
@@ -1479,6 +1575,8 @@ window.OPS_AUTH_CONFIG = {
     });
 
     renderCalendar();
+    loadNetworkCalendarEvents();
+    window.addEventListener("ops-auth-context", loadNetworkCalendarEvents);
   }
 
   window.renderPc409Calendar = renderCalendar;
@@ -1501,17 +1599,17 @@ window.OPS_AUTH_CONFIG = {
 <script src="complaints-isolated-v31.js?v=99"></script>
   <script src="complaints-dashboard-v112.js?v=509"></script>
 <script src="executive-dashboard.js?v=76"></script>
-<script src="premium-reports.js?v=67"></script>
+<script src="premium-reports.js?v=532"></script>
 <script src="ops-intelligence.js?v=509"></script>
 <script src="src/config/aiConfig.js?v=522"></script>
-<script src="src/services/aiProvider.js?v=526"></script>
-<script src="aiProvider.js?v=526"></script>
-<script src="ops-ai-access.js?v=527"></script>
+<script src="src/services/aiProvider.js?v=532"></script>
+<script src="aiProvider.js?v=532"></script>
+<script src="ops-ai-access.js?v=532"></script>
 <script src="ops-ai-director.js?v=509"></script>
 <script src="ops-ai-assistant.js?v=522"></script>
 <script src="restaurant-profile-v53.js?v=111"></script>
 <script src="ops-enterprise-surfaces.js?v=109"></script>
-<script type="module" src="inventory-command.js?v=512"></script>
+<script type="module" src="inventory-command.js?v=532"></script>
 <script src="pwa.js?v=84"></script>
 <script src="ops-readability-v510.js?v=510"></script>
 <script src="admin-center-v513.js?v=516"></script>

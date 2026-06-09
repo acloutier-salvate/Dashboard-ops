@@ -25,10 +25,24 @@ const QUICK_INVENTORY_KEYWORDS = [
   "eau"
 ];
 
+export function inventoryCountMode(product){
+  return product?._inventory_count_mode === "cases" ? "cases" : "units";
+}
+
+export function inventoryCountModeLabel(product){
+  return inventoryCountMode(product) === "cases" ? "caisse" : "unité";
+}
+
+export function productCost(product){
+  if(inventoryCountMode(product) === "cases"){
+    return Number(product?.case_cost ?? product?.unit_cost ?? 0);
+  }
+  return Number(product?.unit_cost ?? product?.case_cost ?? 0);
+}
+
 export function inventoryValue(product){
   const stock = Number(product?.current_stock || 0);
-  const cost = Number(product?.case_cost ?? product?.unit_cost ?? 0);
-  return Math.max(0, stock * cost);
+  return Math.max(0, stock * productCost(product));
 }
 
 export function stockGap(product){
@@ -41,10 +55,6 @@ export function stockMinimum(product){
 
 export function stockTarget(product){
   return Math.max(0, Number(product?.stock_cible ?? product?.stock_minimum ?? product?.minimum_stock ?? 0));
-}
-
-export function productCost(product){
-  return Number(product?.case_cost ?? product?.unit_cost ?? 0);
 }
 
 export function targetRecommendation(product){

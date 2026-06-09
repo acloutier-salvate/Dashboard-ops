@@ -88,6 +88,7 @@
       "dashRestaurant",
       "cfComplaintRestaurant",
       "complaintRestaurant",
+      "inventoryRestaurant",
       "inventoryRestaurantSelect"
     ];
     for(const id of ids){
@@ -97,6 +98,38 @@
     return "";
   }
 
+  function activePageId(){
+    return document.querySelector(".page.active")?.id || "";
+  }
+
+  function scopeForActivePage(question, ctx){
+    const activePage = activePageId();
+    const explicitRestaurant = detectRestaurant(question);
+    const pageRestaurant = activeRestaurant();
+    const todayMode = isTodayQuestion(question);
+    const isDashboard = activePage === "page-dashboard" || activePage === "page-executive-dashboard";
+    const isRestaurant = activePage === "page-restaurant";
+    const isInventory = activePage === "page-inventory";
+    const isComplaints = activePage === "page-complaints";
+
+    if(explicitRestaurant){
+      return { activePage, selected:explicitRestaurant, network:false, todayMode:false, instruction:`Analyser uniquement le restaurant nommé dans la question: ${explicitRestaurant}.` };
+    }
+    if(isDashboard || todayMode){
+      return { activePage, selected:"", network:true, todayMode:true, instruction:"L'utilisateur est dans le Centre de contrôle. Analyser le réseau complet autorisé et citer seulement les KPI réseau présents dans le contexte." };
+    }
+    if(isRestaurant && pageRestaurant){
+      return { activePage, selected:pageRestaurant, network:false, todayMode:false, instruction:`L'utilisateur est dans l'onglet Restaurant. Analyser uniquement le restaurant sélectionné: ${pageRestaurant}.` };
+    }
+    if(isInventory && pageRestaurant){
+      return { activePage, selected:pageRestaurant, network:false, todayMode:false, instruction:`L'utilisateur est dans l'inventaire. Relier l'analyse au restaurant sélectionné si possible: ${pageRestaurant}.` };
+    }
+    if(isComplaints){
+      return { activePage, selected:pageRestaurant || "", network:!pageRestaurant, todayMode:!pageRestaurant, instruction:pageRestaurant ? `L'utilisateur est dans Plaintes. Analyser les plaintes du restaurant sélectionné: ${pageRestaurant}.` : "L'utilisateur est dans Plaintes. Analyser les plaintes du réseau autorisé." };
+    }
+    return { activePage, selected:pageRestaurant || "", network:!pageRestaurant, todayMode:!pageRestaurant, instruction:pageRestaurant ? `Analyser le restaurant sélectionné: ${pageRestaurant}.` : "Analyser le réseau autorisé. Si la question exige un restaurant précis et qu'il manque, demander lequel." };
+  }
+
   function currentWeek(){
     const ids = ["profileWeek","restaurantWeek","dashboardWeek","dashWeek","cfComplaintQuickWeek","complaintQuickWeek"];
     for(const id of ids){
@@ -104,6 +137,51 @@
       if(value) return value;
     }
     return "";
+  }
+
+  function parseDate(value){
+    if(value instanceof Date && !Number.isNaN(value.getTime())) return value;
+    const text = String(value || "").trim();
+    if(!text) return null;
+    const iso = text.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if(iso) return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    const d = new Date(text);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  function complaintActiveRange(){
+    const customStart = document.getElementById("cfComplaintDate")?.value || document.getElementById("complaintDate")?.value || "";
+    const customEnd = document.getElementById("cfComplaintEndDate")?.value || document.getElementById("complaintEndDate")?.value || "";
+    if(customStart || customEnd){
+      const start = parseDate(customStart);
+      const end = parseDate(customEnd || customStart);
+      if(start) start.setHours(0,0,0,0);
+      if(end) end.setHours(23,59,59,999);
+      return { start, end, label:[customStart, customEnd].filter(Boolean).join(" au ") };
+    }
+    const weekValue = document.getElementById("cfComplaintQuickWeek")?.value || document.getElementById("complaintQuickWeek")?.value || currentWeek();
+    const match = String(weekValue || "").match(/(\d{4}-\d{2}-\d{2}).*?(\d{4}-\d{2}-\d{2})/);
+    if(match){
+      const start = parseDate(match[1]);
+      const end = parseDate(match[2]);
+      if(start) start.setHours(0,0,0,0);
+      if(end) end.setHours(23,59,59,999);
+      return { start, end, label:`${match[1]} au ${match[2]}` };
+    }
+    return null;
+  }
+
+  function filterComplaintsByActivePeriod(rows){
+    const range = complaintActiveRange();
+    if(!range?.start && !range?.end) return { rows:rows || [], range:null };
+    const filtered = (rows || []).filter((row) => {
+      const d = parseDate(row?.date || row?.dateIso || row?.created_at || row?.week);
+      if(!d) return false;
+      if(range.start && d < range.start) return false;
+      if(range.end && d > range.end) return false;
+      return true;
+    });
+    return { rows:filtered, range };
   }
 
   function visibleRows(){
@@ -163,9 +241,10 @@
 
   function buildDataSummary(question){
     const ctx = currentContext();
-    const selected = detectRestaurant(question) || activeRestaurant();
-    const todayMode = isTodayQuestion(question);
-    if(!selected && !todayMode){
+    const scope = scopeForActivePage(question, ctx);
+    const selected = scope.selected;
+    const todayMode = scope.todayMode || scope.network;
+    if(!selected && !todayMode && scope.activePage !== "page-dashboard"){
       return { needsRestaurant:true, denied:false, reason:"restaurant_required" };
     }
     const allowed = canAccessRestaurant(selected, ctx);
@@ -174,10 +253,12 @@
     }
     const allKpiRows = visibleRows();
     const allComplaints = visibleComplaints();
+    const periodComplaints = filterComplaintsByActivePeriod(allComplaints);
     const kpiRows = todayMode && !selected ? allKpiRows : allKpiRows.filter((row) => !selected || norm(row.restaurant) === norm(selected));
-    const complaints = todayMode && !selected ? allComplaints : allComplaints.filter((row) => !selected || norm(row.restaurant) === norm(selected));
+    const complaintSourceRows = periodComplaints.rows;
+    const complaints = todayMode && !selected ? complaintSourceRows : complaintSourceRows.filter((row) => !selected || norm(row.restaurant) === norm(selected));
     const week = currentWeek();
-    const activePage = document.querySelector(".page.active")?.id || "";
+    const activePage = scope.activePage;
     const inventoryValue = document.getElementById("inventoryValueKpi")?.textContent?.trim() || "";
     const inventoryAlerts = [...document.querySelectorAll("#page-inventory .inventoryAlert strong")]
       .map((el) => el.textContent.trim())
@@ -196,10 +277,13 @@
         allowedRestaurants:ctx.role === "super_admin" ? ["Tous"] : ctx.allowedRestaurants
       },
       scopeRestaurant:selected || "Réseau autorisé",
+      scopeMode:selected ? "restaurant" : "network",
+      scopeInstruction:scope.instruction,
       activePage,
       week,
       selectedRestaurant:selected || null,
       selectedPeriod:week || null,
+      complaintPeriod:periodComplaints.range?.label || null,
       permissions:{
         role:ctx.role,
         roleLabel:ctx.roleLabel,

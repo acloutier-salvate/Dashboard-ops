@@ -714,7 +714,9 @@
   .bar span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#ef4444,#f97316,#22c55e)}
   .bar.money span{background:linear-gradient(90deg,#2563eb,#06b6d4)}
   .empty{text-align:center;color:#64748b;font-weight:800;padding:22px!important}
-  .details td:last-child{max-width:360px;color:#334155}
+  .details table{table-layout:fixed}
+  .details th,.details td{white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+  .details td:last-child{max-width:460px;color:#334155;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
   .footer{color:#64748b;font-size:11px;text-align:center;margin:22px 0 8px}
   @media(max-width:820px){.report{padding:14px}.hero{padding:22px}.hero h1{font-size:26px}.context,.kpis,.grid{grid-template-columns:1fr}.toolbar{justify-content:stretch}.toolbar button{flex:1}.panel{overflow-x:auto}.details table{min-width:900px}}
   @media print{body{background:#fff}.toolbar{display:none}.report{max-width:none;padding:0}.hero,.kpi,.panel{box-shadow:none}.hero{border-radius:18px}.panel{break-inside:avoid}.details{break-inside:auto}.details tr{break-inside:avoid}}

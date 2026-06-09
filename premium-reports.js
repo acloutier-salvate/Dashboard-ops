@@ -229,6 +229,40 @@
     </body></html>`;
   }
 
+  async function addOpenAiReportSummary(report, type){
+    try{
+      if(!window.OPS_AI_PROVIDER?.generateFranchiseeReport || !window.OPS_AI_ACCESS?.buildDataSummary) return report;
+      const question = type === "network"
+        ? "Prépare un rapport exécutif réseau premium avec les données visibles."
+        : type === "restaurant"
+          ? "Prépare un rapport restaurant premium avec les données visibles."
+          : "Prépare un rapport plaintes premium avec les données visibles.";
+      const context = window.OPS_AI_ACCESS.buildDataSummary(question);
+      const result = await window.OPS_AI_PROVIDER.generateFranchiseeReport({
+        question,
+        localAnswer:report.summary || "",
+        context,
+        reportPreview:{
+          title:report.title,
+          meta:report.meta,
+          kpis:report.kpis,
+          footer:report.footer
+        }
+      });
+      const answer = String(result?.answer || "").trim();
+      if(answer){
+        report.sections.unshift({
+          title:"Analyse OPS AI",
+          wide:true,
+          html:`<div class="summary">${esc(answer).replace(/\n/g, "<br>")}</div>`
+        });
+      }
+    }catch(error){
+      console.warn("Analyse OpenAI rapport indisponible:", error?.message || error);
+    }
+    return report;
+  }
+
   function readComplaintFilters(){
     const restaurant = $("cfComplaintRestaurant")?.value || $("complaintRestaurant")?.value || "Tous";
     const type = $("cfComplaintType")?.value || $("complaintType")?.value || "Tous";
@@ -425,6 +459,7 @@
         : type === "network"
           ? buildNetworkReportData()
           : buildComplaintReportData();
+      await addOpenAiReportSummary(report, type);
       const reportWindow = window.open("", "_blank");
       if(!reportWindow){
         alert("Le rapport n'a pas pu s'ouvrir. Autorise les popups pour Dashboard OPS, puis réessaie.");

@@ -8,6 +8,7 @@ import {
   filteredStockSettingsProducts,
   inventoryProgress,
   inventoryValue,
+  inventoryCountModeLabel,
   isQuickInventoryProduct,
   metrics,
   minimumRecommendation,
@@ -19,7 +20,7 @@ import {
   stockMinimum,
   stockTarget,
   targetRecommendation
-} from "./inventory-calculations.js?v=511";
+} from "./inventory-calculations.js?v=532";
 
 export const PRODUCT_BATCH = 180;
 
@@ -42,6 +43,7 @@ export function renderInventoryView(state, options){
         <button class="inventoryBtn ghost" data-open-stock-settings type="button">Configuration stocks</button>
         <button class="inventoryBtn ghost" data-open-assisted-order type="button">Ajuster la commande</button>
         <button class="inventoryBtn ghost" data-open-inventory-history type="button">Historique</button>
+        <button class="inventoryBtn countModeBtn" id="inventoryChangeCountMode" type="button">Mode: ${state.countMode === "cases" ? "Caisses" : "Unités"}</button>
         <button class="inventoryBtn red primaryCta" id="inventoryFinishGenerate" type="button">Terminer l'inventaire et générer la commande</button>
         <button class="inventoryBtn syncSecondary" id="inventoryPushSupabase" type="button">Synchroniser</button>
       </div>
@@ -105,6 +107,7 @@ export function renderInventoryView(state, options){
       ${renderHistoryPanel(state)}
       ${renderImportPanel(state)}
     </section>
+    ${renderCountModePrompt(state)}
   `;
 }
 
@@ -154,6 +157,7 @@ export function renderAutoOrderOnly(state){
     </div>
     ${items.length > 80 ? `<div class="inventoryMore"><span>${number(80)} sur ${number(items.length)} produits affichés pour garder l'écran fluide.</span><button class="inventoryMiniBtn" data-open-assisted-order type="button">Voir commande complète</button></div>` : ""}
     <div class="autoOrderActions">
+      <button class="inventoryBtn ghost" id="inventoryAiOrderAnalysis" type="button">Analyse OPS AI</button>
       <button class="inventoryBtn ghost" data-open-assisted-order type="button">Ajuster la commande</button>
     </div>
   `;
@@ -415,7 +419,7 @@ function productListMarkup(state, list){
         <span>${number(products.length)} produit(s)</span>
       </div>
       <div class="inventoryCategoryProducts">
-        ${products.map(productCard).join("")}
+        ${products.map((product) => productCard(product, state)).join("")}
       </div>
     </section>
   `).join("");
@@ -469,14 +473,15 @@ function isDefaultInventoryScope(state){
   return !state.search && state.category === "Tous" && state.supplier === "Tous" && state.location === "Tous" && state.view === "all";
 }
 
-function productCard(product){
+function productCard(product, state){
   const minGap = stockGap(product);
   const need = targetRecommendation(product);
-  const cost = Number(product.case_cost ?? product.unit_cost);
+  const cost = productCost(product);
   const value = inventoryValue(product);
   const health = stockHealth(product);
   const tone = minGap > 0 ? "low" : "ok";
-  const stockLabel = product.case_cost !== null && product.case_cost !== undefined ? "Stock actuel (caisse)" : "Stock actuel (unité)";
+  const stockLabel = `Stock actuel (${inventoryCountModeLabel(product)})`;
+  const modeHelp = state.countMode === "cases" ? "Compté en caisses" : "Compté en unités";
   return `
     <article class="inventoryProduct checklistProduct ${tone} health-${health.tone}" data-product-id="${safe(product.id)}">
       <div class="inventoryProductTop">
@@ -499,6 +504,7 @@ function productCard(product){
         </label>
         <button type="button" data-stock-step="1" aria-label="Ajouter 1">+</button>
       </div>
+      <div class="inventoryCountModeHint">${safe(modeHelp)} · valeur au coût d'achat</div>
       <div class="stockLevelTrack" data-stock-ratio style="--stock-ratio:${health.percent}%"><i></i></div>
       <div class="inventoryMinimum inventoryStanding">
         <span>Standing <strong data-standing-value>${number(stockTarget(product),2)}</strong></span>
@@ -511,6 +517,29 @@ function productCard(product){
         <span>${money(value)}</span>
       </div>
     </article>
+  `;
+}
+
+function renderCountModePrompt(state){
+  if(!state.countModePromptOpen) return "";
+  return `
+    <div class="inventoryModalBackdrop" role="presentation">
+      <section class="inventoryCountModeModal" role="dialog" aria-modal="true" aria-labelledby="inventoryCountModeTitle">
+        <p class="inventoryEyebrow">Début d'inventaire</p>
+        <h3 id="inventoryCountModeTitle">Comment veux-tu compter ton inventaire?</h3>
+        <p>Choisis le mode de saisie pour ce comptage. Tu peux le changer plus tard au besoin.</p>
+        <div class="inventoryCountModeChoices">
+          <button type="button" data-inventory-count-mode="units">
+            <strong>Unités</strong>
+            <span>Pour inscrire les quantités à l'unité.</span>
+          </button>
+          <button type="button" data-inventory-count-mode="cases">
+            <strong>Caisses</strong>
+            <span>Pour inscrire les quantités en caisses d'achat.</span>
+          </button>
+        </div>
+      </section>
+    </div>
   `;
 }
 

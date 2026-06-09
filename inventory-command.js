@@ -25,7 +25,7 @@ import {
   stockMinimum,
   stockTarget,
   targetRecommendation
-} from "./inventory-calculations.js?v=511";
+} from "./inventory-calculations.js?v=532";
 import {
   createLocalPurchaseOrder,
   latestLocalPurchaseOrderForRestaurant,
@@ -59,13 +59,14 @@ import {
   renderProductsOnly as renderProductsMarkup,
   updateCardStatus,
   updateLiveSummary
-} from "./inventory-render.js?v=512";
+} from "./inventory-render.js?v=532";
 
 const DATA_URL = "inventory-data.json?v=86";
 const STORAGE_KEY = "dashboard_ops_inventory_v1";
 const SOURCE_KEY = "dashboard_ops_inventory_source_v1";
 const HISTORY_KEY = "dashboard_ops_inventory_history_v1";
 const DEFAULT_DAYS = 7;
+const COUNT_MODES = ["units", "cases"];
 
 const state = {
   loaded:false,
@@ -92,6 +93,8 @@ const state = {
   supabaseStatus:"",
   lastAutosaveAt:"",
   order:{ sales:40000, foodCost:32, days:DEFAULT_DAYS },
+  countMode:"units",
+  countModePromptOpen:false,
   context:null
 };
 
@@ -190,7 +193,8 @@ function saveLocalState(){
     })),
     order:state.order,
     assistedItems:state.assistedItems || [],
-    lastImport:state.lastImport
+    lastImport:state.lastImport,
+    countMode:state.countMode
   };
   localStorage.setItem(storageScope(), JSON.stringify(payload));
   state.lastAutosaveAt = new Date().toISOString();
@@ -245,6 +249,7 @@ function loadLocalCorrections(){
 
 function applyLocalState(){
   const saved = loadLocalState();
+  state.countMode = COUNT_MODES.includes(saved.countMode) ? saved.countMode : state.countMode || "units";
   state.products.forEach((product) => {
     product.current_stock = Number(product._base_current_stock || 0);
     product.minimum_stock = Number(product._base_minimum_stock || 0);
@@ -255,6 +260,7 @@ function applyLocalState(){
     product.frequence_commande = product.frequence_commande || "hebdomadaire";
     product.ordre_affichage_commande = Number(product.ordre_affichage_commande || 0);
     product._inventory_counted = false;
+    product._inventory_count_mode = state.countMode;
     product.inventory_value = inventoryValue(product);
   });
   const byId = new Map((saved.products || []).map((product) => [product.id, product]));
@@ -273,12 +279,25 @@ function applyLocalState(){
     product._inventory_counted = Boolean(local.inventory_counted) || Number(product.current_stock || 0) > 0;
     product.storage_location = normalizeLocation(local.storage_location || product.storage_location);
     product.active_status = local.active_status !== false;
+    product._inventory_count_mode = state.countMode;
     product.inventory_value = inventoryValue(product);
   });
   if(saved.order) state.order = Object.assign({}, state.order, saved.order);
   if(Array.isArray(saved.assistedItems)) state.assistedItems = saved.assistedItems;
   if(saved.lastImport) state.lastImport = saved.lastImport;
   if(saved.updatedAt) state.lastAutosaveAt = saved.updatedAt;
+}
+
+function applyCountModeToProducts(){
+  state.countMode = COUNT_MODES.includes(state.countMode) ? state.countMode : "units";
+  state.products.forEach((product) => {
+    product._inventory_count_mode = state.countMode;
+    product.inventory_value = inventoryValue(product);
+  });
+}
+
+function hasActiveInventoryInput(){
+  return state.products.some((product) => product._inventory_counted || Number(product.current_stock || 0) > 0);
 }
 
 function ensureCurrentRestaurant(){
@@ -327,6 +346,7 @@ function render(){
   const root = $("inventoryOps");
   if(!root) return;
   ensureCurrentRestaurant();
+  applyCountModeToProducts();
   const options = renderOptions();
   if(state.screen === "history"){
     root.innerHTML = renderInventoryHistoryPage(state, options);
@@ -433,6 +453,13 @@ function bind(){
       render();
     });
   });
+  $("inventoryChangeCountMode")?.addEventListener("click", () => {
+    state.countModePromptOpen = true;
+    render();
+  });
+  document.querySelectorAll("[data-inventory-count-mode]").forEach((button) => {
+    button.addEventListener("click", () => setInventoryCountMode(button.dataset.inventoryCountMode));
+  });
   $("backToInventory")?.addEventListener("click", () => {
     state.screen = "main";
     state.selectedHistoryId = null;
@@ -448,6 +475,7 @@ function bind(){
   $("inventoryAutoOrderPanel")?.addEventListener("input", handleAutoOrderInput);
   $("inventoryAutoOrderPanel")?.addEventListener("click", handleAutoOrderClick);
   $("inventorySaveAutoOrder")?.addEventListener("click", saveAutomaticOrder);
+  $("inventoryAiOrderAnalysis")?.addEventListener("click", analyzeOrderWithOpsAi);
   $("backToInventoryHistory")?.addEventListener("click", () => {
     state.screen = "history";
     render();
@@ -499,6 +527,24 @@ async function syncInventorySupabase(){
   }
 }
 
+function setInventoryCountMode(mode){
+  if(!COUNT_MODES.includes(mode)) return;
+  if(state.countMode !== mode && hasActiveInventoryInput()){
+    const ok = confirm("Des quantités sont déjà inscrites. Changer le mode ne convertit pas les nombres déjà entrés. Continuer?");
+    if(!ok){
+      state.countModePromptOpen = false;
+      render();
+      return;
+    }
+  }
+  state.countMode = mode;
+  state.countModePromptOpen = false;
+  applyCountModeToProducts();
+  saveLocalState();
+  toast(mode === "cases" ? "Comptage en caisses activé" : "Comptage en unités activé");
+  render();
+}
+
 function productFromEvent(event){
   const card = event.target.closest?.(".inventoryProduct");
   if(!card) return { card:null, product:null };
@@ -513,6 +559,7 @@ function handleProductListInput(event){
   if(input.matches("[data-stock-input]")){
     product.current_stock = Math.max(0, Number(input.value || 0));
     product._inventory_counted = true;
+    product._inventory_count_mode = state.countMode;
     product.inventory_value = inventoryValue(product);
   }else{
     product.minimum_stock = Math.max(0, Number(input.value || 0));
@@ -712,7 +759,7 @@ Code: ${product.supplier_product_code || "—"}
 Fournisseur: ${product.supplier || "—"}
 Format: ${product.format || "—"}
 Coût d'achat: ${moneyPrecise(product.case_cost ?? product.unit_cost)}
-Stock: ${product.current_stock}
+Stock: ${product.current_stock} ${state.countMode === "cases" ? "caisse(s)" : "unité(s)"}
 Minimum: ${product.minimum_stock}
 Stock cible: ${stockTarget(product)}
 Favori: ${product.produit_favori ? "Oui" : "Non"}
@@ -791,6 +838,48 @@ async function createPurchaseOrder(){
   const saved = await savePurchaseOrderToSupabase(state, purchaseOrder);
   toast(saved ? "Brouillon commande créé et synchronisé" : "Brouillon commande créé localement");
   render();
+}
+
+async function analyzeOrderWithOpsAi(){
+  const button = $("inventoryAiOrderAnalysis");
+  if(button){
+    button.disabled = true;
+    button.textContent = "Analyse en cours...";
+  }
+  try{
+    if(!window.OPS_AI_PROVIDER?.generateFoodOrderHybrid){
+      toast("OPS AI n'est pas disponible pour l'instant");
+      return;
+    }
+    const items = automaticOrderItems(state).slice(0, 80);
+    const context = window.OPS_AI_ACCESS?.buildDataSummary
+      ? window.OPS_AI_ACCESS.buildDataSummary(`Analyse la commande intelligente pour ${state.restaurant}`)
+      : {};
+    const localAnswer = `Commande actuelle: ${items.length} produit(s), valeur estimée ${money(round(items.reduce((sum, item) => sum + Number(item.estimated_cost || 0), 0)))}. L'analyse OpenAI doit rester consultative et ne pas modifier automatiquement les quantités.`;
+    const result = await window.OPS_AI_PROVIDER.generateFoodOrderHybrid({
+      question:`Vérifie la commande intelligente pour ${state.restaurant}. Utilise les derniers inventaires et les 6 dernières commandes si disponibles. Ne recommande pas de quantité qui n'existe pas dans le contexte.`,
+      localAnswer,
+      context,
+      orderPreview:items.map((item) => ({
+        product:item.product_name,
+        stock:item.current_stock,
+        standing:item.stock_cible,
+        recommended:item.recommended_quantity,
+        adjusted:item.adjusted_quantity,
+        estimatedCost:item.estimated_cost,
+        supplier:item.supplier,
+        code:item.supplier_product_code
+      }))
+    });
+    alert((result?.answer || "Aucune analyse disponible.").trim());
+  }catch(error){
+    alert(`OPS AI n'a pas pu analyser la commande: ${error?.message || error}`);
+  }finally{
+    if(button){
+      button.disabled = false;
+      button.textContent = "Analyse OPS AI";
+    }
+  }
 }
 
 function applyStockSettingsFromDom(){
@@ -1005,6 +1094,10 @@ function mergeProducts(newProducts, message){
 
 async function init(){
   await loadSeedData();
+  const saved = loadLocalState();
+  if(!COUNT_MODES.includes(saved.countMode) && !hasActiveInventoryInput() && state.screen === "main"){
+    state.countModePromptOpen = true;
+  }
   render();
 }
 
