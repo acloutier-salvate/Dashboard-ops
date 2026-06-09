@@ -1,0 +1,1 @@
+V2.99.2 : limite les restaurants à la liste OPS dans tous les onglets : Dashboard, Restaurant, Audit, Rapports, Messages et Plaintes.

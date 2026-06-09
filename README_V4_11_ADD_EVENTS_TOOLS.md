@@ -1,0 +1,1 @@
+V4.11: ajout manuel d’événements + import PDF/image.

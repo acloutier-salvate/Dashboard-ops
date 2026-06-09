@@ -1,0 +1,1 @@
+Ops Intelligence Stable V2. Dézippe et redrop le dossier complet sur Netlify.

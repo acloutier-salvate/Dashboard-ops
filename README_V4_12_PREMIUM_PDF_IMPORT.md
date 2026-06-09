@@ -1,0 +1,1 @@
+V4.12: Import PDF premium avec détection dates/promos/SMS + écran d’aperçu avant confirmation.

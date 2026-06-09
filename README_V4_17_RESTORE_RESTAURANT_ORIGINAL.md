@@ -1,0 +1,1 @@
+V4.17: l'onglet Restaurant complet a été restauré depuis la base stable V2.99.3, au lieu d'ajouter des cartes manuellement.

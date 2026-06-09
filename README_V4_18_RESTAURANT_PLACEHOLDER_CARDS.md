@@ -1,0 +1,1 @@
+V4.18: les cartes Restaurant restent affichées même quand aucune donnée n'existe pour le restaurant sélectionné.
