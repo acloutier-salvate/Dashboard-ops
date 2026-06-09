@@ -1,7 +1,7 @@
 (function(){
   "use strict";
 
-  const VERSION = "v522";
+  const VERSION = "v533";
   const ROLE_LABELS = {
     super_admin:"Super Admin",
     co:"Conseiller Opérations",
@@ -149,6 +149,45 @@
     return Number.isNaN(d.getTime()) ? null : d;
   }
 
+  function parseQuestionWeekRange(question){
+    const text = String(question || "").toLowerCase();
+    const months = {
+      janvier:1, fevrier:2, février:2, mars:3, avril:4, mai:5, juin:6,
+      juillet:7, aout:8, août:8, septembre:9, octobre:10, novembre:11, decembre:12, décembre:12
+    };
+    const iso = text.match(/(\d{4}-\d{2}-\d{2}).*?(\d{4}-\d{2}-\d{2})/);
+    if(iso){
+      return { start:iso[1], end:iso[2], label:`${iso[1]} au ${iso[2]}` };
+    }
+    const fr = text.match(/(\d{1,2})\s+([a-zéûôîàèùç]+)\s+(?:au|a|à|-)\s+(\d{1,2})\s+([a-zéûôîàèùç]+)?\s*(\d{4})/i);
+    if(fr){
+      const startDay = Number(fr[1]);
+      const startMonth = months[fr[2]] || null;
+      const endDay = Number(fr[3]);
+      const endMonth = months[fr[4]] || startMonth;
+      const year = Number(fr[5]);
+      if(startMonth && endMonth && year){
+        const start = `${year}-${String(startMonth).padStart(2,"0")}-${String(startDay).padStart(2,"0")}`;
+        const end = `${year}-${String(endMonth).padStart(2,"0")}-${String(endDay).padStart(2,"0")}`;
+        return { start, end, label:`${start} au ${end}` };
+      }
+    }
+    return null;
+  }
+
+  function rowMatchesQuestionWeek(row, range){
+    if(!range) return false;
+    const week = String(row?.week || row?.period || row?.dateRange || "");
+    if(week.includes(range.start) && week.includes(range.end)) return true;
+    const rowDate = parseDate(row?.date || row?.dateIso || row?.created_at);
+    if(!rowDate) return false;
+    const start = parseDate(range.start);
+    const end = parseDate(range.end);
+    if(start) start.setHours(0,0,0,0);
+    if(end) end.setHours(23,59,59,999);
+    return (!start || rowDate >= start) && (!end || rowDate <= end);
+  }
+
   function complaintActiveRange(){
     const customStart = document.getElementById("cfComplaintDate")?.value || document.getElementById("complaintDate")?.value || "";
     const customEnd = document.getElementById("cfComplaintEndDate")?.value || document.getElementById("complaintEndDate")?.value || "";
@@ -237,6 +276,60 @@
       typeMap.set(label, item);
     });
     return [...typeMap.values()].sort((a, b) => b.count - a.count || b.amount - a.amount).slice(0, 8);
+  }
+
+  function money(value){
+    const n = num(value);
+    return n == null ? "—" : n.toLocaleString("fr-CA", { style:"currency", currency:"CAD", maximumFractionDigits:0 });
+  }
+
+  function pct(value){
+    const n = num(value);
+    return n == null ? "—" : `${n.toLocaleString("fr-CA", { maximumFractionDigits:1 })} %`;
+  }
+
+  function exactOperationalResultAnswer(question){
+    const key = norm(question);
+    const asksResult = key.includes("resultat") || key.includes("resultats") || key.includes("performance") || key.includes("chiffre") || key.includes("semaine");
+    if(!asksResult) return null;
+    const restaurant = detectRestaurant(question) || activeRestaurant();
+    const range = parseQuestionWeekRange(question);
+    if(!restaurant || !range) return null;
+    const ctx = currentContext();
+    if(!canAccessRestaurant(restaurant, ctx)){
+      return `Je ne peux pas analyser ${restaurant}, car ce restaurant n'est pas dans tes accès.`;
+    }
+    const rows = visibleRows().filter((row) => norm(row.restaurant) === norm(restaurant) && rowMatchesQuestionWeek(row, range));
+    if(!rows.length){
+      return `Je ne trouve pas de ligne KPI chargée pour ${restaurant} pour la semaine ${range.label}. Vérifie que le CSV KPI contient bien cette semaine et que la synchronisation est terminée.`;
+    }
+    const complaints = visibleComplaints().filter((row) => norm(row.restaurant) === norm(restaurant) && rowMatchesQuestionWeek(row, range));
+    const totals = {
+      sales:round(sum(rows, "sales"), 0),
+      csi:round(avg(rows, "csi"), 1),
+      delay:round(avg(rows, "delay"), 1),
+      complaintsKpi:round(sum(rows, "complaints"), 0),
+      growth:round(avg(rows, "growth"), 1),
+      foodCost:round(avg(rows, "foodCost"), 1),
+      laborCost:round(avg(rows, "laborCost"), 1),
+      complaintRows:complaints.length,
+      complaintAmount:round(complaints.reduce((total, row) => total + (num(row?.amount) || 0), 0), 0)
+    };
+    return [
+      `Voici les résultats exacts chargés dans Dashboard OPS pour ${restaurant}, semaine ${range.label} :`,
+      "",
+      `- Ventes : ${money(totals.sales)}`,
+      `- CSI : ${pct(totals.csi)}`,
+      `- Délai livraison : ${totals.delay == null ? "—" : `${totals.delay} min`}`,
+      `- Augmentation ventes : ${pct(totals.growth)}`,
+      `- Food Cost : ${pct(totals.foodCost)}`,
+      `- Labor Cost : ${pct(totals.laborCost)}`,
+      `- Plaintes KPI : ${totals.complaintsKpi ?? "—"}`,
+      `- Plaintes visibles dans le CSV plaintes pour cette semaine : ${totals.complaintRows}`,
+      `- Dédommagement plaintes : ${money(totals.complaintAmount)}`,
+      "",
+      "Ces chiffres proviennent des données actuellement chargées dans le logiciel, sans estimation OpenAI."
+    ].join("\n");
   }
 
   function buildDataSummary(question){
@@ -646,6 +739,20 @@
 
   async function answerWithPermissions(question, localAnswer){
     const startedAt = Date.now();
+    const exactAnswer = exactOperationalResultAnswer(question);
+    if(exactAnswer){
+      setLastSource("dashboard", { reason:"exact_operational_result", version:VERSION });
+      await recordUsage({
+        startedAt,
+        restaurant:detectRestaurant(question) || activeRestaurant() || null,
+        analysisType:"exact_result",
+        provider:"dashboard",
+        approxTokens:approximateTokens({ question, exactAnswer }),
+        success:true,
+        metadata:{ deterministic:true, version:VERSION }
+      });
+      return exactAnswer;
+    }
     const summary = buildDataSummary(question);
     if(summary.needsRestaurant){
       setLastSource("guard", { reason:summary.reason });
